@@ -203,6 +203,23 @@
             style="width:2.5em;height:1.4em;cursor:pointer;" onchange="toggleDark()">
         </div>
       </div>
+      <hr class="settings-divider">
+      <div class="info-row" style="align-items:flex-start;flex-direction:column;gap:10px;">
+        <div>
+          <span class="info-label"><i class="bi bi-download me-2"></i>Install App</span>
+          <div class="text-muted mt-1" style="font-size:0.78rem;">Add Money Mate to your home screen for a full app experience — works offline too.</div>
+        </div>
+        <button class="pwa-install-btn btn btn-primary btn-sm rounded-pill px-4" onclick="triggerPwaInstall()" style="display:none;">
+          <i class="bi bi-phone me-2"></i>Install on this device
+        </button>
+        <div id="pwaAlreadyInstalled" class="text-muted" style="display:none;font-size:0.82rem;">
+          <i class="bi bi-check-circle-fill text-success me-1"></i>App is installed on this device.
+        </div>
+        <div class="text-muted" style="font-size:0.78rem;" id="pwaManualHint">
+          <strong>Android Chrome:</strong> tap ⋮ menu → "Add to Home Screen"<br>
+          <strong>iOS Safari:</strong> tap the Share button → "Add to Home Screen"
+        </div>
+      </div>
     </div>
   </div>
 
@@ -624,6 +641,18 @@
         var ok = this.value.length >= 4;
         setFb('fb_s_email_pwd', this, ok, ok ? 'Password entered.' : 'Too short.');
       });
+    }
+  })();
+
+  // ── PWA Install state on settings page ──────────────────────────
+  (function () {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    if (isStandalone) {
+      const el = document.getElementById('pwaAlreadyInstalled');
+      const hint = document.getElementById('pwaManualHint');
+      if (el) el.style.display = 'block';
+      if (hint) hint.style.display = 'none';
     }
   })();
 </script>

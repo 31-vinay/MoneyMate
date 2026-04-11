@@ -480,6 +480,9 @@
   </script>
   {% block scripts %}{% endblock %}
   <script>
+    // ── PWA: Service Worker + Install Prompt ──────────────────────────────
+    let _deferredInstallPrompt = null;
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js', {scope: '/'})
@@ -501,6 +504,38 @@
           })
           .catch((err) => console.warn('SW registration failed:', err));
       });
+    }
+
+    // Capture the browser's install prompt before it disappears
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      _deferredInstallPrompt = e;
+      // Show any install buttons we have on the page
+      document.querySelectorAll('.pwa-install-btn').forEach(btn => {
+        btn.style.display = 'inline-flex';
+      });
+    });
+
+    // Hide install buttons if already installed
+    window.addEventListener('appinstalled', () => {
+      _deferredInstallPrompt = null;
+      document.querySelectorAll('.pwa-install-btn').forEach(btn => {
+        btn.style.display = 'none';
+      });
+    });
+
+    // Call this from any install button
+    function triggerPwaInstall() {
+      if (_deferredInstallPrompt) {
+        _deferredInstallPrompt.prompt();
+        _deferredInstallPrompt.userChoice.then(() => {
+          _deferredInstallPrompt = null;
+          document.querySelectorAll('.pwa-install-btn').forEach(btn => btn.style.display = 'none');
+        });
+      } else {
+        // Fallback: show instructions
+        alert('To install:\nAndroid — tap the browser menu (⋮) → "Add to Home screen"\niOS Safari — tap Share (□↑) → "Add to Home Screen"');
+      }
     }
   </script>
 </body>
