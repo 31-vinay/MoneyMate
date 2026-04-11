@@ -166,15 +166,18 @@ def create_admin():
 
 @app.route("/manifest.json")
 def pwa_manifest():
-    return send_from_directory(
+    response = send_from_directory(
         "static", "manifest.json", mimetype="application/manifest+json"
     )
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 
 @app.route("/sw.js")
 def pwa_sw():
     response = send_from_directory("static", "sw.js", mimetype="application/javascript")
     response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
 
 
