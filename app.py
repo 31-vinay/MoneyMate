@@ -65,8 +65,38 @@ from parsers import parse_bank_statement, scan_imap_emails, IMAP_PRESETS
 
 # ── App Setup ─────────────────────────────────────────────────
 
+class _StripCookieVary:
+    """Strip 'Cookie' from the Vary header on PWA-critical responses.
+
+    Flask's session interface unconditionally adds 'Vary: Cookie' to every
+    response, which causes Chrome's installability checker (which fetches the
+    manifest anonymously) to treat the manifest as a session-dependent resource
+    and skip the PWA install prompt, falling back to "Create shortcut".
+    """
+    _PWA_PATHS = frozenset({"/manifest.json", "/sw.js"})
+
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        if environ.get("PATH_INFO") not in self._PWA_PATHS:
+            return self.wsgi_app(environ, start_response)
+
+        def _start_response(status, headers, exc_info=None):
+            out = []
+            for name, value in headers:
+                if name.lower() == "vary":
+                    parts = [p.strip() for p in value.split(",")
+                             if p.strip().lower() != "cookie"]
+                    value = ", ".join(parts) or "Accept-Encoding"
+                out.append((name, value))
+            return start_response(status, out, exc_info)
+
+        return self.wsgi_app(environ, _start_response)
+
+
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.wsgi_app = _StripCookieVary(ProxyFix(app.wsgi_app, x_proto=1, x_host=1))
 
 app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "change-me-in-production")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///finance.db"
@@ -170,6 +200,7 @@ def pwa_manifest():
         "static", "manifest.json", mimetype="application/manifest+json"
     )
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Vary"] = "Accept-Encoding"
     return response
 
 
@@ -178,6 +209,7 @@ def pwa_sw():
     response = send_from_directory("static", "sw.js", mimetype="application/javascript")
     response.headers["Service-Worker-Allowed"] = "/"
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Vary"] = "Accept-Encoding"
     return response
 
 
