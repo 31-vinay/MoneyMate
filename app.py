@@ -42,7 +42,11 @@ from forms import (
     GoalForm,
     SavingsUpdateForm,
 )
-from categorizer import expense_categories, auto_categorize_transaction, classify_essential
+from categorizer import (
+    expense_categories,
+    auto_categorize_transaction,
+    classify_essential,
+)
 from charts import (
     get_analysis_data,
     chart_expense_distribution,
@@ -76,6 +80,7 @@ login_manager.login_view = "login"
 
 
 # ── Flask-Admin ───────────────────────────────────────────────
+
 
 class AdminModelView(ModelView):
     def is_accessible(self):
@@ -121,7 +126,9 @@ with app.app_context():
     try:
         with db.engine.connect() as conn:
             conn.execute(db.text("UPDATE goal SET priority='1' WHERE priority='high'"))
-            conn.execute(db.text("UPDATE goal SET priority='2' WHERE priority='medium'"))
+            conn.execute(
+                db.text("UPDATE goal SET priority='2' WHERE priority='medium'")
+            )
             conn.execute(db.text("UPDATE goal SET priority='3' WHERE priority='low'"))
             conn.commit()
     except Exception:
@@ -130,12 +137,14 @@ with app.app_context():
 
 # ── Helpers ───────────────────────────────────────────────────
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
 # ── Admin Bootstrap ───────────────────────────────────────────
+
 
 @app.route("/create_admin")
 def create_admin():
@@ -154,9 +163,12 @@ def create_admin():
 
 # ── PWA Routes ────────────────────────────────────────────────
 
+
 @app.route("/manifest.json")
 def pwa_manifest():
-    return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
+    return send_from_directory(
+        "static", "manifest.json", mimetype="application/manifest+json"
+    )
 
 
 @app.route("/sw.js")
@@ -172,6 +184,7 @@ def offline():
 
 
 # ── Public Routes ─────────────────────────────────────────────
+
 
 @app.route("/")
 def index():
@@ -200,7 +213,10 @@ def register():
             return redirect(url_for("login"))
         except Exception:
             db.session.rollback()
-            flash("Something went wrong creating your account. Please try again.", "danger")
+            flash(
+                "Something went wrong creating your account. Please try again.",
+                "danger",
+            )
     return render_template("register.html", form=form)
 
 
@@ -218,16 +234,31 @@ def login():
             if mpin_input:
                 if user.mpin and user.mpin == mpin_input:
                     login_user(user)
-                    return redirect(url_for("tutorial") if not user.has_seen_tutorial else url_for("dashboard"))
+                    return redirect(
+                        url_for("tutorial")
+                        if not user.has_seen_tutorial
+                        else url_for("dashboard")
+                    )
                 flash("Incorrect MPIN. Please try again.", "danger")
-                return render_template("login.html", form=form, prefill_email=email, show_mpin=True)
+                return render_template(
+                    "login.html", form=form, prefill_email=email, show_mpin=True
+                )
             elif password_input:
                 if user.check_password(password_input):
                     db.session.commit()
                     login_user(user)
-                    return redirect(url_for("tutorial") if not user.has_seen_tutorial else url_for("dashboard"))
+                    return redirect(
+                        url_for("tutorial")
+                        if not user.has_seen_tutorial
+                        else url_for("dashboard")
+                    )
                 flash("Incorrect password. Please try again.", "danger")
-                return render_template("login.html", form=form, prefill_email=email, show_mpin=bool(user.mpin))
+                return render_template(
+                    "login.html",
+                    form=form,
+                    prefill_email=email,
+                    show_mpin=bool(user.mpin),
+                )
         else:
             flash("No account found with that email.", "danger")
     return render_template("login.html", form=form)
@@ -238,7 +269,9 @@ def check_mpin_status():
     email = request.args.get("email", "").strip().lower()
     user = User.query.filter(User.email.ilike(email)).first()
     if user:
-        return jsonify({"exists": True, "has_mpin": bool(user.mpin), "username": user.username})
+        return jsonify(
+            {"exists": True, "has_mpin": bool(user.mpin), "username": user.username}
+        )
     return jsonify({"exists": False, "has_mpin": False})
 
 
@@ -264,6 +297,7 @@ def complete_tutorial():
 
 
 # ── Settings / Account ────────────────────────────────────────
+
 
 @app.route("/profile")
 @login_required
@@ -436,8 +470,16 @@ def reset_account():
 @app.route("/request-account-info")
 @login_required
 def request_account_info():
-    incomes = Income.query.filter_by(user_id=current_user.id).order_by(Income.date_received.desc()).all()
-    expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
+    incomes = (
+        Income.query.filter_by(user_id=current_user.id)
+        .order_by(Income.date_received.desc())
+        .all()
+    )
+    expenses = (
+        Expense.query.filter_by(user_id=current_user.id)
+        .order_by(Expense.date.desc())
+        .all()
+    )
     goals = Goal.query.filter_by(user_id=current_user.id).all()
     return render_template(
         "account_info.html",
@@ -449,6 +491,7 @@ def request_account_info():
 
 
 # ── Dashboard ─────────────────────────────────────────────────
+
 
 @app.route("/dashboard")
 @login_required
@@ -484,7 +527,11 @@ def dashboard():
     except ValueError:
         view_year, view_month = now.year, now.month
     month_start = datetime(view_year, view_month, 1)
-    month_end = datetime(view_year + 1, 1, 1) if view_month == 12 else datetime(view_year, view_month + 1, 1)
+    month_end = (
+        datetime(view_year + 1, 1, 1)
+        if view_month == 12
+        else datetime(view_year, view_month + 1, 1)
+    )
     is_current_month = view_year == now.year and view_month == now.month
 
     month_options = []
@@ -493,7 +540,9 @@ def dashboard():
         while mo <= 0:
             mo += 12
             yo -= 1
-        month_options.append((f"{yo:04d}-{mo:02d}", datetime(yo, mo, 1).strftime("%b %Y")))
+        month_options.append(
+            (f"{yo:04d}-{mo:02d}", datetime(yo, mo, 1).strftime("%b %Y"))
+        )
     selected_month_label = datetime(view_year, view_month, 1).strftime("%B %Y")
 
     expenses = Expense.query.filter(
@@ -528,31 +577,58 @@ def dashboard():
 
     if is_current_month:
         yesterday_start = datetime(now.year, now.month, now.day) - timedelta(days=1)
-        recent_incomes = Income.query.filter(
-            Income.user_id == current_user.id, Income.date_received >= yesterday_start
-        ).order_by(Income.date_received.desc()).all()
-        recent_expenses = Expense.query.filter(
-            Expense.user_id == current_user.id, Expense.date >= yesterday_start
-        ).order_by(Expense.date.desc()).all()
+        recent_incomes = (
+            Income.query.filter(
+                Income.user_id == current_user.id,
+                Income.date_received >= yesterday_start,
+            )
+            .order_by(Income.date_received.desc())
+            .all()
+        )
+        recent_expenses = (
+            Expense.query.filter(
+                Expense.user_id == current_user.id, Expense.date >= yesterday_start
+            )
+            .order_by(Expense.date.desc())
+            .all()
+        )
     else:
-        recent_incomes = Income.query.filter(
-            Income.user_id == current_user.id,
-            Income.date_received >= month_start,
-            Income.date_received < month_end,
-        ).order_by(Income.date_received.desc()).limit(30).all()
-        recent_expenses = Expense.query.filter(
-            Expense.user_id == current_user.id,
-            Expense.date >= month_start,
-            Expense.date < month_end,
-        ).order_by(Expense.date.desc()).limit(30).all()
+        recent_incomes = (
+            Income.query.filter(
+                Income.user_id == current_user.id,
+                Income.date_received >= month_start,
+                Income.date_received < month_end,
+            )
+            .order_by(Income.date_received.desc())
+            .limit(30)
+            .all()
+        )
+        recent_expenses = (
+            Expense.query.filter(
+                Expense.user_id == current_user.id,
+                Expense.date >= month_start,
+                Expense.date < month_end,
+            )
+            .order_by(Expense.date.desc())
+            .limit(30)
+            .all()
+        )
 
-    days_passed = max(1, (now - month_start).days + 1) if is_current_month else max(1, (month_end - month_start).days)
+    days_passed = (
+        max(1, (now - month_start).days + 1)
+        if is_current_month
+        else max(1, (month_end - month_start).days)
+    )
     burn_rate = total_spent / days_passed
 
     subscriptions = detect_subscriptions(current_user.id)
     total_sub_cost = sum(s["avg_amount"] for s in subscriptions)
 
-    goals = Goal.query.filter_by(user_id=current_user.id).order_by(Goal.created_at.desc()).all()
+    goals = (
+        Goal.query.filter_by(user_id=current_user.id)
+        .order_by(Goal.created_at.desc())
+        .all()
+    )
 
     monthly_spending = defaultdict(float)
     for exp in expenses:
@@ -564,8 +640,12 @@ def dashboard():
 
     needs_remaining = budget_needs - essential_spent
     wants_remaining = budget_wants - non_essential_spent
-    needs_used_pct = min(100, (essential_spent / budget_needs * 100)) if budget_needs > 0 else 0
-    wants_used_pct = min(100, (non_essential_spent / budget_wants * 100)) if budget_wants > 0 else 0
+    needs_used_pct = (
+        min(100, (essential_spent / budget_needs * 100)) if budget_needs > 0 else 0
+    )
+    wants_used_pct = (
+        min(100, (non_essential_spent / budget_wants * 100)) if budget_wants > 0 else 0
+    )
     needs_warning = (needs_remaining > 0) and (needs_remaining <= budget_needs * 0.10)
     wants_warning = (wants_remaining > 0) and (wants_remaining <= budget_wants * 0.10)
     needs_over = needs_remaining < 0
@@ -580,15 +660,23 @@ def dashboard():
     days_remaining = days_in_month - now.day if is_current_month else 0
     projected_month_end_spend = total_spent + (burn_rate * days_remaining)
     predicted_balance = total_income - projected_month_end_spend
-    show_month_forecast_warning = is_current_month and (days_remaining <= 10) and (predicted_balance < 0)
+    show_month_forecast_warning = (
+        is_current_month and (days_remaining <= 10) and (predicted_balance < 0)
+    )
     shortfall = abs(predicted_balance) if predicted_balance < 0 else 0
-    required_daily_savings = round(shortfall / days_remaining, 2) if days_remaining > 0 else shortfall
+    required_daily_savings = (
+        round(shortfall / days_remaining, 2) if days_remaining > 0 else shortfall
+    )
 
     non_essential_categories = {}
     for e in expenses:
         if not e.is_essential:
-            non_essential_categories[e.category] = non_essential_categories.get(e.category, 0) + e.amount
-    top_non_essential_cats = sorted(non_essential_categories.items(), key=lambda x: x[1], reverse=True)[:3]
+            non_essential_categories[e.category] = (
+                non_essential_categories.get(e.category, 0) + e.amount
+            )
+    top_non_essential_cats = sorted(
+        non_essential_categories.items(), key=lambda x: x[1], reverse=True
+    )[:3]
     top_subs = sorted(subscriptions, key=lambda s: s["avg_amount"], reverse=True)[:3]
 
     def goal_priority_num(g):
@@ -597,18 +685,27 @@ def dashboard():
         except (ValueError, TypeError):
             return 99
 
-    active_goals = sorted([g for g in goals if g.remaining_amount > 0], key=goal_priority_num)
+    active_goals = sorted(
+        [g for g in goals if g.remaining_amount > 0], key=goal_priority_num
+    )
     goal_suggestions = []
     if total_income > 0 and active_goals and goals_alloc > 0:
         weights = [1.0 / goal_priority_num(g) for g in active_goals]
         total_weight = sum(weights)
         for g, w in zip(active_goals, weights):
-            alloc_pct = w / total_weight if total_weight > 0 else 1.0 / len(active_goals)
+            alloc_pct = (
+                w / total_weight if total_weight > 0 else 1.0 / len(active_goals)
+            )
             suggested = round(min(goals_alloc * alloc_pct, g.remaining_amount), 2)
-            goal_suggestions.append({
-                "name": g.name, "priority": goal_priority_num(g),
-                "suggested": suggested, "remaining": g.remaining_amount, "id": g.id,
-            })
+            goal_suggestions.append(
+                {
+                    "name": g.name,
+                    "priority": goal_priority_num(g),
+                    "suggested": suggested,
+                    "remaining": g.remaining_amount,
+                    "id": g.id,
+                }
+            )
 
     return render_template(
         "dashboard.html",
@@ -664,6 +761,7 @@ def dashboard():
 
 # ── Income Routes ─────────────────────────────────────────────
 
+
 @app.route("/add_income", methods=["GET", "POST"])
 @login_required
 def add_income():
@@ -674,14 +772,16 @@ def add_income():
             if form.date_received.data
             else datetime.now(timezone.utc).replace(tzinfo=None)
         )
-        db.session.add(Income(
-            user_id=current_user.id,
-            source=form.source.data,
-            amount=form.amount.data,
-            date_received=date_received,
-            description=form.description.data,
-            is_recurring=form.is_recurring.data,
-        ))
+        db.session.add(
+            Income(
+                user_id=current_user.id,
+                source=form.source.data,
+                amount=form.amount.data,
+                date_received=date_received,
+                description=form.description.data,
+                is_recurring=form.is_recurring.data,
+            )
+        )
         db.session.commit()
         flash("Income added successfully!", "success")
         return redirect(url_for("dashboard"))
@@ -695,15 +795,25 @@ def add_income():
 
     income_query = Income.query.filter_by(user_id=current_user.id)
     if inc_filter_days:
-        since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=inc_filter_days)
+        since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+            days=inc_filter_days
+        )
         income_query = income_query.filter(Income.date_received >= since)
-        inc_filter_label = f"Last {inc_filter_days} day{'s' if inc_filter_days != 1 else ''}"
+        inc_filter_label = (
+            f"Last {inc_filter_days} day{'s' if inc_filter_days != 1 else ''}"
+        )
     else:
         inc_filter_label = "All Time"
 
     incomes = income_query.order_by(Income.date_received.desc()).all()
-    return render_template("add_income.html", form=form, edit=False, incomes=incomes,
-                           inc_filter_days=inc_filter_days, inc_filter_label=inc_filter_label)
+    return render_template(
+        "add_income.html",
+        form=form,
+        edit=False,
+        incomes=incomes,
+        inc_filter_days=inc_filter_days,
+        inc_filter_label=inc_filter_label,
+    )
 
 
 @app.route("/edit_income/<int:id>", methods=["GET", "POST"])
@@ -720,7 +830,9 @@ def edit_income(id):
         income.description = form.description.data
         income.is_recurring = form.is_recurring.data
         if form.date_received.data:
-            income.date_received = datetime.combine(form.date_received.data, datetime.min.time())
+            income.date_received = datetime.combine(
+                form.date_received.data, datetime.min.time()
+            )
         db.session.commit()
         flash("Income updated.", "success")
         return redirect(url_for("add_income"))
@@ -731,9 +843,19 @@ def edit_income(id):
         form.is_recurring.data = income.is_recurring
         if income.date_received:
             form.date_received.data = income.date_received.date()
-    incomes = Income.query.filter_by(user_id=current_user.id).order_by(Income.date_received.desc()).all()
-    return render_template("add_income.html", form=form, edit=True, incomes=incomes,
-                           inc_filter_days=None, inc_filter_label="All Time")
+    incomes = (
+        Income.query.filter_by(user_id=current_user.id)
+        .order_by(Income.date_received.desc())
+        .all()
+    )
+    return render_template(
+        "add_income.html",
+        form=form,
+        edit=True,
+        incomes=incomes,
+        inc_filter_days=None,
+        inc_filter_label="All Time",
+    )
 
 
 @app.route("/delete_income/<int:id>")
@@ -754,9 +876,14 @@ def delete_income(id):
 def bulk_delete_income():
     ids = [int(i) for i in request.form.getlist("ids") if i.isdigit()]
     if ids:
-        Income.query.filter(Income.id.in_(ids), Income.user_id == current_user.id).delete(synchronize_session=False)
+        Income.query.filter(
+            Income.id.in_(ids), Income.user_id == current_user.id
+        ).delete(synchronize_session=False)
         db.session.commit()
-        flash(f"Deleted {len(ids)} income entr{'y' if len(ids) == 1 else 'ies'}.", "success")
+        flash(
+            f"Deleted {len(ids)} income entr{'y' if len(ids) == 1 else 'ies'}.",
+            "success",
+        )
     days = request.form.get("days", "")
     return redirect(url_for("add_income", days=days) if days else url_for("add_income"))
 
@@ -767,30 +894,45 @@ def bulk_edit_income():
     ids = [int(i) for i in request.form.getlist("ids") if i.isdigit()]
     new_source = request.form.get("source", "").strip()
     if ids and new_source:
-        incs = Income.query.filter(Income.id.in_(ids), Income.user_id == current_user.id).all()
+        incs = Income.query.filter(
+            Income.id.in_(ids), Income.user_id == current_user.id
+        ).all()
         for inc in incs:
             inc.source = new_source
         db.session.commit()
-        flash(f"Updated source for {len(incs)} income entr{'y' if len(incs) == 1 else 'ies'}.", "success")
+        flash(
+            f"Updated source for {len(incs)} income entr{'y' if len(incs) == 1 else 'ies'}.",
+            "success",
+        )
     days = request.form.get("days", "")
     return redirect(url_for("add_income", days=days) if days else url_for("add_income"))
 
 
 # ── Expense Routes ────────────────────────────────────────────
 
+
 @app.route("/get_subcategories/<main_category>")
 @login_required
 def get_subcategories(main_category):
     if main_category in expense_categories:
-        return jsonify({"subcategories": expense_categories[main_category]["subcategories"], "status": "success"})
+        return jsonify(
+            {
+                "subcategories": expense_categories[main_category]["subcategories"],
+                "status": "success",
+            }
+        )
     return jsonify({"subcategories": [], "status": "error"})
 
 
 def _build_expense_form_choices(form, main_cat=None):
-    form.main_category.choices = [("", "-- Select Category --")] + [(cat, cat) for cat in expense_categories.keys()]
+    form.main_category.choices = [("", "-- Select Category --")] + [
+        (cat, cat) for cat in expense_categories.keys()
+    ]
     if main_cat and main_cat in expense_categories:
         subcats = expense_categories[main_cat]["subcategories"]
-        form.sub_category.choices = [("", "-- Select Sub Category --")] + [(s, s) for s in subcats]
+        form.sub_category.choices = [("", "-- Select Sub Category --")] + [
+            (s, s) for s in subcats
+        ]
     else:
         form.sub_category.choices = [("", "-- Select Sub Category First --")]
 
@@ -805,18 +947,41 @@ def add_expense():
     if request.method == "POST" and form.validate_on_submit():
         category = (
             form.custom_category.data
-            if form.sub_category.data == "Other (User Input)" and form.custom_category.data
+            if form.sub_category.data == "Other (User Input)"
+            and form.custom_category.data
             else form.sub_category.data
         )
-        is_essential = classify_essential(form.main_category.data, form.sub_category.data, form.custom_category.data)
-        exp_date = datetime.combine(form.date.data, datetime.min.time()) if form.date.data else datetime.now(timezone.utc).replace(tzinfo=None)
-        sub_start = datetime.combine(form.sub_start_date.data, datetime.min.time()) if form.is_subscription.data and form.sub_start_date.data else None
-        sub_end = datetime.combine(form.sub_end_date.data, datetime.min.time()) if form.is_subscription.data and form.sub_end_date.data else None
-        db.session.add(Expense(
-            user_id=current_user.id, category=category, amount=form.amount.data,
-            date=exp_date, description=form.description.data, is_essential=is_essential,
-            is_subscription=form.is_subscription.data, sub_start_date=sub_start, sub_end_date=sub_end,
-        ))
+        is_essential = classify_essential(
+            form.main_category.data, form.sub_category.data, form.custom_category.data
+        )
+        exp_date = (
+            datetime.combine(form.date.data, datetime.min.time())
+            if form.date.data
+            else datetime.now(timezone.utc).replace(tzinfo=None)
+        )
+        sub_start = (
+            datetime.combine(form.sub_start_date.data, datetime.min.time())
+            if form.is_subscription.data and form.sub_start_date.data
+            else None
+        )
+        sub_end = (
+            datetime.combine(form.sub_end_date.data, datetime.min.time())
+            if form.is_subscription.data and form.sub_end_date.data
+            else None
+        )
+        db.session.add(
+            Expense(
+                user_id=current_user.id,
+                category=category,
+                amount=form.amount.data,
+                date=exp_date,
+                description=form.description.data,
+                is_essential=is_essential,
+                is_subscription=form.is_subscription.data,
+                sub_start_date=sub_start,
+                sub_end_date=sub_end,
+            )
+        )
         db.session.commit()
         flash("Expense added successfully!", "success")
         return redirect(url_for("dashboard"))
@@ -832,16 +997,26 @@ def add_expense():
 
     expense_query = Expense.query.filter_by(user_id=current_user.id)
     if exp_filter_days:
-        since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=exp_filter_days)
+        since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+            days=exp_filter_days
+        )
         expense_query = expense_query.filter(Expense.date >= since)
-        exp_filter_label = f"Last {exp_filter_days} day{'s' if exp_filter_days != 1 else ''}"
+        exp_filter_label = (
+            f"Last {exp_filter_days} day{'s' if exp_filter_days != 1 else ''}"
+        )
     else:
         exp_filter_label = "All Time"
 
     expenses = expense_query.order_by(Expense.date.desc()).all()
-    return render_template("add_expense.html", form=form, edit=False, expenses=expenses,
-                           exp_filter_days=exp_filter_days, exp_filter_label=exp_filter_label,
-                           expense_categories=expense_categories)
+    return render_template(
+        "add_expense.html",
+        form=form,
+        edit=False,
+        expenses=expenses,
+        exp_filter_days=exp_filter_days,
+        exp_filter_label=exp_filter_label,
+        expense_categories=expense_categories,
+    )
 
 
 @app.route("/edit_expense/<int:id>", methods=["GET", "POST"])
@@ -853,24 +1028,37 @@ def edit_expense(id):
         return redirect(url_for("dashboard"))
 
     form = ExpenseForm()
-    main_cat = request.form.get("main_category", "") if request.method == "POST" else None
+    main_cat = (
+        request.form.get("main_category", "") if request.method == "POST" else None
+    )
     _build_expense_form_choices(form, main_cat)
 
     if form.validate_on_submit():
         expense.category = (
             form.custom_category.data
-            if form.sub_category.data == "Other (User Input)" and form.custom_category.data
+            if form.sub_category.data == "Other (User Input)"
+            and form.custom_category.data
             else form.sub_category.data
         )
         expense.amount = form.amount.data
         expense.description = form.description.data
         expense.is_subscription = form.is_subscription.data
-        expense.is_essential = classify_essential(form.main_category.data, form.sub_category.data, form.custom_category.data)
+        expense.is_essential = classify_essential(
+            form.main_category.data, form.sub_category.data, form.custom_category.data
+        )
         if form.date.data:
             expense.date = datetime.combine(form.date.data, datetime.min.time())
         if form.is_subscription.data:
-            expense.sub_start_date = datetime.combine(form.sub_start_date.data, datetime.min.time()) if form.sub_start_date.data else None
-            expense.sub_end_date = datetime.combine(form.sub_end_date.data, datetime.min.time()) if form.sub_end_date.data else None
+            expense.sub_start_date = (
+                datetime.combine(form.sub_start_date.data, datetime.min.time())
+                if form.sub_start_date.data
+                else None
+            )
+            expense.sub_end_date = (
+                datetime.combine(form.sub_end_date.data, datetime.min.time())
+                if form.sub_end_date.data
+                else None
+            )
         else:
             expense.sub_start_date = None
             expense.sub_end_date = None
@@ -879,18 +1067,32 @@ def edit_expense(id):
         return redirect(url_for("add_expense"))
 
     elif request.method == "GET":
-        main_cat = next((cat for cat, data in expense_categories.items() if expense.category in data["subcategories"]), None)
+        main_cat = next(
+            (
+                cat
+                for cat, data in expense_categories.items()
+                if expense.category in data["subcategories"]
+            ),
+            None,
+        )
         if main_cat:
             subcats = expense_categories[main_cat]["subcategories"]
-            form.sub_category.choices = [("", "-- Select Sub Category --")] + [(s, s) for s in subcats]
+            form.sub_category.choices = [("", "-- Select Sub Category --")] + [
+                (s, s) for s in subcats
+            ]
             form.main_category.data = main_cat
             form.sub_category.data = expense.category
         else:
-            form.sub_category.choices = [("", "-- Select Sub Category --"), ("Other (User Input)", "Other (User Input)")]
+            form.sub_category.choices = [
+                ("", "-- Select Sub Category --"),
+                ("Other (User Input)", "Other (User Input)"),
+            ]
             form.main_category.data = "Other"
             form.sub_category.data = "Other (User Input)"
             form.custom_category.data = expense.category
-        form.main_category.choices = [("", "-- Select Category --")] + [(cat, cat) for cat in expense_categories.keys()]
+        form.main_category.choices = [("", "-- Select Category --")] + [
+            (cat, cat) for cat in expense_categories.keys()
+        ]
         form.amount.data = expense.amount
         form.description.data = expense.description
         form.is_subscription.data = expense.is_subscription
@@ -901,7 +1103,11 @@ def edit_expense(id):
         if expense.sub_end_date:
             form.sub_end_date.data = expense.sub_end_date.date()
 
-    expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
+    expenses = (
+        Expense.query.filter_by(user_id=current_user.id)
+        .order_by(Expense.date.desc())
+        .all()
+    )
     return render_template("add_expense.html", form=form, edit=True, expenses=expenses)
 
 
@@ -923,11 +1129,15 @@ def delete_expense(id):
 def bulk_delete_expenses():
     ids = [int(i) for i in request.form.getlist("ids") if i.isdigit()]
     if ids:
-        Expense.query.filter(Expense.id.in_(ids), Expense.user_id == current_user.id).delete(synchronize_session=False)
+        Expense.query.filter(
+            Expense.id.in_(ids), Expense.user_id == current_user.id
+        ).delete(synchronize_session=False)
         db.session.commit()
         flash(f"Deleted {len(ids)} expense{'s' if len(ids) != 1 else ''}.", "success")
     days = request.form.get("days", "")
-    return redirect(url_for("add_expense", days=days) if days else url_for("add_expense"))
+    return redirect(
+        url_for("add_expense", days=days) if days else url_for("add_expense")
+    )
 
 
 @app.route("/bulk_edit_expenses", methods=["POST"])
@@ -938,17 +1148,25 @@ def bulk_edit_expenses():
     new_sub = request.form.get("sub_category", "").strip()
     if ids and new_main and new_sub:
         is_essential = classify_essential(new_main, new_sub)
-        exps = Expense.query.filter(Expense.id.in_(ids), Expense.user_id == current_user.id).all()
+        exps = Expense.query.filter(
+            Expense.id.in_(ids), Expense.user_id == current_user.id
+        ).all()
         for exp in exps:
             exp.category = new_sub
             exp.is_essential = is_essential
         db.session.commit()
-        flash(f"Updated category for {len(exps)} expense{'s' if len(exps) != 1 else ''}.", "success")
+        flash(
+            f"Updated category for {len(exps)} expense{'s' if len(exps) != 1 else ''}.",
+            "success",
+        )
     days = request.form.get("days", "")
-    return redirect(url_for("add_expense", days=days) if days else url_for("add_expense"))
+    return redirect(
+        url_for("add_expense", days=days) if days else url_for("add_expense")
+    )
 
 
 # ── Subscriptions ─────────────────────────────────────────────
+
 
 @app.route("/subscriptions")
 @login_required
@@ -965,7 +1183,9 @@ def subscriptions():
         else:
             sub["sub_start_date"] = sub["sub_end_date"] = sub["expense_id"] = None
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    return render_template("subscriptions.html", subscriptions=subs, total_cost=total_cost, now=now)
+    return render_template(
+        "subscriptions.html", subscriptions=subs, total_cost=total_cost, now=now
+    )
 
 
 @app.route("/remove_expired_subscription/<int:id>")
@@ -983,10 +1203,15 @@ def remove_expired_subscription(id):
 
 # ── Goals ─────────────────────────────────────────────────────
 
+
 @app.route("/goals")
 @login_required
 def goals():
-    goals = Goal.query.filter_by(user_id=current_user.id).order_by(Goal.created_at.desc()).all()
+    goals = (
+        Goal.query.filter_by(user_id=current_user.id)
+        .order_by(Goal.created_at.desc())
+        .all()
+    )
     return render_template("goals.html", goals=goals)
 
 
@@ -995,15 +1220,24 @@ def goals():
 def add_goal():
     form = GoalForm()
     if form.validate_on_submit():
-        db.session.add(Goal(
-            user_id=current_user.id, name=form.name.data,
-            target_amount=form.target_amount.data, monthly_savings=form.monthly_savings.data,
-            target_date=form.target_date.data, priority=form.priority.data,
-        ))
+        db.session.add(
+            Goal(
+                user_id=current_user.id,
+                name=form.name.data,
+                target_amount=form.target_amount.data,
+                monthly_savings=form.monthly_savings.data,
+                target_date=form.target_date.data,
+                priority=form.priority.data,
+            )
+        )
         db.session.commit()
         flash("Goal created successfully!", "success")
         return redirect(url_for("goals"))
-    goals = Goal.query.filter_by(user_id=current_user.id).order_by(Goal.created_at.desc()).all()
+    goals = (
+        Goal.query.filter_by(user_id=current_user.id)
+        .order_by(Goal.created_at.desc())
+        .all()
+    )
     return render_template("add_goal.html", form=form, goals=goals)
 
 
@@ -1045,16 +1279,33 @@ def goal_detail(id):
         additional_savings = form.saved_amount.data
         goal.saved_amount = goal.saved_amount + additional_savings
         db.session.commit()
-        flash(f"Added ₹{additional_savings:,.0f} to your savings! Total saved: ₹{goal.saved_amount:,.0f}", "success")
+        flash(
+            f"Added ₹{additional_savings:,.0f} to your savings! Total saved: ₹{goal.saved_amount:,.0f}",
+            "success",
+        )
         return redirect(url_for("goal_detail", id=id))
     suggestions = get_spending_suggestions(current_user.id, goal)
     milestones = []
     if goal.monthly_savings > 0:
         for month in range(1, min(13, int(goal.estimated_months) + 1)):
-            milestone_date = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=30 * month)
+            milestone_date = datetime.now(timezone.utc).replace(
+                tzinfo=None
+            ) + timedelta(days=30 * month)
             milestone_amount = goal.saved_amount + (goal.monthly_savings * month)
-            milestones.append({"month": month, "date": milestone_date, "amount": min(milestone_amount, goal.target_amount)})
-    return render_template("goal_detail.html", goal=goal, form=form, suggestions=suggestions, milestones=milestones)
+            milestones.append(
+                {
+                    "month": month,
+                    "date": milestone_date,
+                    "amount": min(milestone_amount, goal.target_amount),
+                }
+            )
+    return render_template(
+        "goal_detail.html",
+        goal=goal,
+        form=form,
+        suggestions=suggestions,
+        milestones=milestones,
+    )
 
 
 @app.route("/goal/<int:id>/delete")
@@ -1081,13 +1332,24 @@ def what_if(id):
     spending_reduction = data.get("spending_reduction", 0)
     total_monthly = new_monthly_savings + spending_reduction
     if total_monthly <= 0:
-        return jsonify({"months": float("inf"), "date": None, "progress": goal.progress_percentage})
+        return jsonify(
+            {"months": float("inf"), "date": None, "progress": goal.progress_percentage}
+        )
     months = goal.remaining_amount / total_monthly
-    estimated_date = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=30 * months)
-    return jsonify({"months": round(months, 1), "date": estimated_date.strftime("%d %b %Y"), "progress": goal.progress_percentage})
+    estimated_date = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
+        days=30 * months
+    )
+    return jsonify(
+        {
+            "months": round(months, 1),
+            "date": estimated_date.strftime("%d %b %Y"),
+            "progress": goal.progress_percentage,
+        }
+    )
 
 
 # ── Analysis + Charts ─────────────────────────────────────────
+
 
 @app.route("/analysis")
 @login_required
@@ -1103,15 +1365,27 @@ def analysis():
         date_from = datetime(date_to.year, date_to.month, 1)
         range_label = date_from.strftime("%B %Y")
     elif dr == "2months":
-        date_from = datetime((d := datetime(now.year, now.month, 1) - timedelta(days=60)).year, d.month, 1)
+        date_from = datetime(
+            (d := datetime(now.year, now.month, 1) - timedelta(days=60)).year,
+            d.month,
+            1,
+        )
         date_to = now
         range_label = "Past 2 Months"
     elif dr == "3months":
-        date_from = datetime((d := datetime(now.year, now.month, 1) - timedelta(days=90)).year, d.month, 1)
+        date_from = datetime(
+            (d := datetime(now.year, now.month, 1) - timedelta(days=90)).year,
+            d.month,
+            1,
+        )
         date_to = now
         range_label = "Past 3 Months"
     elif dr == "6months":
-        date_from = datetime((d := datetime(now.year, now.month, 1) - timedelta(days=180)).year, d.month, 1)
+        date_from = datetime(
+            (d := datetime(now.year, now.month, 1) - timedelta(days=180)).year,
+            d.month,
+            1,
+        )
         date_to = now
         range_label = "Past 6 Months"
     elif dr == "all_time":
@@ -1121,8 +1395,12 @@ def analysis():
     elif dr == "custom" and custom_from and custom_to:
         try:
             date_from = datetime.strptime(custom_from, "%Y-%m-%d")
-            date_to = datetime.strptime(custom_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-            range_label = f"{date_from.strftime('%d %b %Y')} – {date_to.strftime('%d %b %Y')}"
+            date_to = datetime.strptime(custom_to, "%Y-%m-%d").replace(
+                hour=23, minute=59, second=59
+            )
+            range_label = (
+                f"{date_from.strftime('%d %b %Y')} – {date_to.strftime('%d %b %Y')}"
+            )
         except ValueError:
             date_from = datetime(now.year, now.month, 1)
             date_to = now
@@ -1178,6 +1456,7 @@ def analysis():
 @login_required
 def analysis_chart_dist():
     import base64
+
     dark_mode = request.cookies.get("darkMode") == "true"
     categories, _, _, _ = get_analysis_data(current_user.id, Expense, Income)
     result = chart_expense_distribution(categories, dark_mode=dark_mode)
@@ -1190,6 +1469,7 @@ def analysis_chart_dist():
 @login_required
 def analysis_chart_cats():
     import base64
+
     dark_mode = request.cookies.get("darkMode") == "true"
     categories, _, _, _ = get_analysis_data(current_user.id, Expense, Income)
     result = chart_category_breakdown(categories, dark_mode=dark_mode)
@@ -1202,8 +1482,11 @@ def analysis_chart_cats():
 @login_required
 def analysis_chart_trend():
     import base64
+
     dark_mode = request.cookies.get("darkMode") == "true"
-    _, monthly_spending_ordered, _, _ = get_analysis_data(current_user.id, Expense, Income)
+    _, monthly_spending_ordered, _, _ = get_analysis_data(
+        current_user.id, Expense, Income
+    )
     result = chart_monthly_trend(monthly_spending_ordered, dark_mode=dark_mode)
     if not result:
         return ("", 204)
@@ -1214,15 +1497,21 @@ def analysis_chart_trend():
 @login_required
 def analysis_chart_inc_exp():
     import base64
+
     dark_mode = request.cookies.get("darkMode") == "true"
-    _, _, monthly_income, monthly_expense_all = get_analysis_data(current_user.id, Expense, Income)
-    result = chart_income_vs_expense(monthly_income, monthly_expense_all, dark_mode=dark_mode)
+    _, _, monthly_income, monthly_expense_all = get_analysis_data(
+        current_user.id, Expense, Income
+    )
+    result = chart_income_vs_expense(
+        monthly_income, monthly_expense_all, dark_mode=dark_mode
+    )
     if not result:
         return ("", 204)
     return chart_png_response(io.BytesIO(base64.b64decode(result)))
 
 
 # ── Email Import ──────────────────────────────────────────────
+
 
 @app.route("/email-import")
 @login_required
@@ -1245,10 +1534,22 @@ def email_import_connect():
         mail = imaplib.IMAP4_SSL(host, port, ssl_context=ctx)
         mail.login(email_addr, password)
         mail.logout()
-        session["imap_config"] = {"host": host, "port": port, "email": email_addr, "password": password}
-        return jsonify({"success": True, "message": f"Connected to {host} successfully!"})
+        session["imap_config"] = {
+            "host": host,
+            "port": port,
+            "email": email_addr,
+            "password": password,
+        }
+        return jsonify(
+            {"success": True, "message": f"Connected to {host} successfully!"}
+        )
     except imaplib.IMAP4.error as e:
-        return jsonify({"success": False, "message": f"Authentication failed — check your email/password or App Password. ({e})"})
+        return jsonify(
+            {
+                "success": False,
+                "message": f"Authentication failed — check your email/password or App Password. ({e})",
+            }
+        )
     except Exception as e:
         return jsonify({"success": False, "message": f"Connection failed: {e}"})
 
@@ -1265,14 +1566,25 @@ def email_import_disconnect():
 def email_import_scan():
     cfg = session.get("imap_config")
     if not cfg:
-        return jsonify({"success": False, "message": "Not connected to any email account."})
+        return jsonify(
+            {"success": False, "message": "Not connected to any email account."}
+        )
     days = int(request.get_json(force=True).get("days", 30))
     try:
-        transactions = scan_imap_emails(cfg["host"], cfg["port"], cfg["email"], cfg["password"], days=days)
-        return jsonify({"success": True, "transactions": transactions, "count": len(transactions)})
+        transactions = scan_imap_emails(
+            cfg["host"], cfg["port"], cfg["email"], cfg["password"], days=days
+        )
+        return jsonify(
+            {"success": True, "transactions": transactions, "count": len(transactions)}
+        )
     except imaplib.IMAP4.error as e:
         session.pop("imap_config", None)
-        return jsonify({"success": False, "message": f"Email session expired — please reconnect. ({e})"})
+        return jsonify(
+            {
+                "success": False,
+                "message": f"Email session expired — please reconnect. ({e})",
+            }
+        )
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
@@ -1288,11 +1600,27 @@ def email_import_do():
             amount = float(txn["amount"])
             desc = txn.get("description", "")[:200]
             if txn.get("type") == "income":
-                db.session.add(Income(user_id=current_user.id, source=txn.get("sub_cat", "Email Import"),
-                                      amount=amount, date_received=txn_date, description=desc))
+                db.session.add(
+                    Income(
+                        user_id=current_user.id,
+                        source=txn.get("sub_cat", "Email Import"),
+                        amount=amount,
+                        date_received=txn_date,
+                        description=desc,
+                    )
+                )
             else:
-                db.session.add(Expense(user_id=current_user.id, category="Uncategorized", amount=amount,
-                                       date=txn_date, description=desc, is_essential=False, is_subscription=False))
+                db.session.add(
+                    Expense(
+                        user_id=current_user.id,
+                        category="Uncategorized",
+                        amount=amount,
+                        date=txn_date,
+                        description=desc,
+                        is_essential=False,
+                        is_subscription=False,
+                    )
+                )
             imported_count += 1
         except Exception:
             continue
@@ -1301,6 +1629,7 @@ def email_import_do():
 
 
 # ── Bank Statement Import ──────────────────────────────────────
+
 
 @app.route("/bank-statement/upload", methods=["POST"])
 @login_required
@@ -1311,7 +1640,12 @@ def bank_statement_upload():
     filename = f.filename or ""
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext not in ("pdf", "xlsx", "xls", "csv", "zip"):
-        return jsonify({"success": False, "message": "Unsupported file type. Please upload a PDF, Excel (.xlsx/.xls), CSV, or ZIP file."})
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unsupported file type. Please upload a PDF, Excel (.xlsx/.xls), CSV, or ZIP file.",
+            }
+        )
     try:
         file_bytes = f.read()
         if len(file_bytes) > 20 * 1024 * 1024:
@@ -1323,18 +1657,27 @@ def bank_statement_upload():
             try:
                 with zipfile.ZipFile(io.BytesIO(file_bytes)) as zf:
                     entries = [
-                        n for n in zf.namelist()
-                        if not n.startswith("__MACOSX") and not n.endswith("/")
+                        n
+                        for n in zf.namelist()
+                        if not n.startswith("__MACOSX")
+                        and not n.endswith("/")
                         and n.rsplit(".", 1)[-1].lower() in SUPPORTED
                     ]
                     if not entries:
-                        return jsonify({"success": False, "message": "No supported statement file found inside the ZIP."})
+                        return jsonify(
+                            {
+                                "success": False,
+                                "message": "No supported statement file found inside the ZIP.",
+                            }
+                        )
                     all_txns, parsed_files, needs_pw = [], [], False
                     for entry in entries:
                         inner_bytes = zf.read(entry)
                         inner_name = entry.split("/")[-1]
                         try:
-                            txns = parse_bank_statement(inner_bytes, inner_name, password=password)
+                            txns = parse_bank_statement(
+                                inner_bytes, inner_name, password=password
+                            )
                             if txns:
                                 all_txns.extend(txns)
                                 parsed_files.append(inner_name)
@@ -1345,28 +1688,65 @@ def bank_statement_upload():
                             continue
                     if not all_txns:
                         if needs_pw:
-                            return jsonify({"success": False, "needs_password": True, "message": "One or more files inside the ZIP are password-protected."})
-                        return jsonify({"success": False, "message": "No transactions could be detected in any file inside the ZIP."})
+                            return jsonify(
+                                {
+                                    "success": False,
+                                    "needs_password": True,
+                                    "message": "One or more files inside the ZIP are password-protected.",
+                                }
+                            )
+                        return jsonify(
+                            {
+                                "success": False,
+                                "message": "No transactions could be detected in any file inside the ZIP.",
+                            }
+                        )
                     seen, unique = set(), []
                     for t in all_txns:
                         key = (t["date"], t["amount"], t["type"])
                         if key not in seen:
                             seen.add(key)
                             unique.append(t)
-                    return jsonify({"success": True, "transactions": unique, "count": len(unique), "source": f"ZIP ({', '.join(parsed_files)})"})
+                    return jsonify(
+                        {
+                            "success": True,
+                            "transactions": unique,
+                            "count": len(unique),
+                            "source": f"ZIP ({', '.join(parsed_files)})",
+                        }
+                    )
             except zipfile.BadZipFile:
-                return jsonify({"success": False, "message": "The uploaded file is not a valid ZIP archive."})
+                return jsonify(
+                    {
+                        "success": False,
+                        "message": "The uploaded file is not a valid ZIP archive.",
+                    }
+                )
 
         try:
             txns = parse_bank_statement(file_bytes, filename, password=password)
         except ValueError as ve:
             msg = str(ve)
             if "password" in msg.lower():
-                return jsonify({"success": False, "needs_password": True, "message": msg})
+                return jsonify(
+                    {"success": False, "needs_password": True, "message": msg}
+                )
             return jsonify({"success": False, "message": msg})
         if not txns:
-            return jsonify({"success": False, "message": "No transactions could be detected. Make sure the file is a standard bank statement with Date, Description, and Amount columns."})
-        return jsonify({"success": True, "transactions": txns, "count": len(txns), "source": filename})
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "No transactions could be detected. Make sure the file is a standard bank statement with Date, Description, and Amount columns.",
+                }
+            )
+        return jsonify(
+            {
+                "success": True,
+                "transactions": txns,
+                "count": len(txns),
+                "source": filename,
+            }
+        )
     except Exception as e:
         return jsonify({"success": False, "message": f"Parsing failed: {str(e)}"})
 
@@ -1384,28 +1764,60 @@ def bank_statement_import():
             desc = txn.get("description", "")[:200]
             txn_type = txn.get("type", "expense")
             if txn_type == "income":
-                if Income.query.filter_by(user_id=current_user.id, source="Bank Import", amount=amount, date_received=txn_date, description=desc).first():
+                if Income.query.filter_by(
+                    user_id=current_user.id,
+                    source="Bank Import",
+                    amount=amount,
+                    date_received=txn_date,
+                    description=desc,
+                ).first():
                     skipped_count += 1
                     continue
-                db.session.add(Income(user_id=current_user.id, source="Bank Import", amount=amount, date_received=txn_date, description=desc))
+                db.session.add(
+                    Income(
+                        user_id=current_user.id,
+                        source="Bank Import",
+                        amount=amount,
+                        date_received=txn_date,
+                        description=desc,
+                    )
+                )
             else:
-                if Expense.query.filter_by(user_id=current_user.id, amount=amount, date=txn_date, description=desc).first():
+                if Expense.query.filter_by(
+                    user_id=current_user.id,
+                    amount=amount,
+                    date=txn_date,
+                    description=desc,
+                ).first():
                     skipped_count += 1
                     continue
                 cat, essential, sub = auto_categorize_transaction(desc)
-                db.session.add(Expense(user_id=current_user.id, category=cat, amount=amount, date=txn_date,
-                                       description=desc, is_essential=essential, is_subscription=sub))
+                db.session.add(
+                    Expense(
+                        user_id=current_user.id,
+                        category=cat,
+                        amount=amount,
+                        date=txn_date,
+                        description=desc,
+                        is_essential=essential,
+                        is_subscription=sub,
+                    )
+                )
             imported_count += 1
         except Exception:
             continue
     db.session.commit()
-    return jsonify({"success": True, "imported": imported_count, "skipped": skipped_count})
+    return jsonify(
+        {"success": True, "imported": imported_count, "skipped": skipped_count}
+    )
 
 
 @app.route("/retro_categorize", methods=["POST"])
 @login_required
 def retro_categorize():
-    expenses = Expense.query.filter_by(user_id=current_user.id, category="Uncategorized").all()
+    expenses = Expense.query.filter_by(
+        user_id=current_user.id, category="Uncategorized"
+    ).all()
     updated = 0
     for exp in expenses:
         cat, essential, sub = auto_categorize_transaction(exp.description or "")
@@ -1415,7 +1827,9 @@ def retro_categorize():
             exp.is_subscription = sub
             updated += 1
     db.session.commit()
-    remaining = Expense.query.filter_by(user_id=current_user.id, category="Uncategorized").count()
+    remaining = Expense.query.filter_by(
+        user_id=current_user.id, category="Uncategorized"
+    ).count()
     flash(
         f"Auto-categorized {updated} expense{'s' if updated != 1 else ''}. "
         f"{remaining} still need{'s' if remaining == 1 else ''} manual review.",

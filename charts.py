@@ -4,6 +4,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -32,8 +33,16 @@ def chart_expense_distribution(categories, dark_mode=False):
     labels = list(categories.keys())
     values = list(categories.values())
     colors = [
-        "#008080", "#00CEC9", "#FD79A8", "#FDCB6E", "#55EFC4",
-        "#FF924D", "#0984E3", "#7dd3fc", "#00B894", "#74B9FF",
+        "#008080",
+        "#00CEC9",
+        "#FD79A8",
+        "#FDCB6E",
+        "#55EFC4",
+        "#FF924D",
+        "#0984E3",
+        "#7dd3fc",
+        "#00B894",
+        "#74B9FF",
     ]
     fig, ax = plt.subplots(figsize=(5, 4))
     fig.patch.set_alpha(0)
@@ -61,7 +70,9 @@ def chart_expense_distribution(categories, dark_mode=False):
     )
     for text in legend.get_texts():
         text.set_color(txt_color)
-    ax.set_title("Expense Distribution", fontsize=12, fontweight="bold", pad=10, color=txt_color)
+    ax.set_title(
+        "Expense Distribution", fontsize=12, fontweight="bold", pad=10, color=txt_color
+    )
     return make_chart(fig)
 
 
@@ -79,12 +90,24 @@ def chart_income_vs_expense(monthly_inc, monthly_exp, dark_mode=False):
     fig.patch.set_alpha(0)
     w = 0.35
     bars1 = ax.bar(
-        [i - w / 2 for i in x], inc_vals, width=w, color="#00b894",
-        label="Income", edgecolor="white", linewidth=1.2, zorder=3,
+        [i - w / 2 for i in x],
+        inc_vals,
+        width=w,
+        color="#00b894",
+        label="Income",
+        edgecolor="white",
+        linewidth=1.2,
+        zorder=3,
     )
     bars2 = ax.bar(
-        [i + w / 2 for i in x], exp_vals, width=w, color="#FF924D",
-        label="Expense", edgecolor="white", linewidth=1.2, zorder=3,
+        [i + w / 2 for i in x],
+        exp_vals,
+        width=w,
+        color="#FF924D",
+        label="Expense",
+        edgecolor="white",
+        linewidth=1.2,
+        zorder=3,
     )
     for bar in list(bars1) + list(bars2):
         if bar.get_height() > 0:
@@ -92,14 +115,19 @@ def chart_income_vs_expense(monthly_inc, monthly_exp, dark_mode=False):
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height() + 100,
                 f"₹{bar.get_height():,.0f}",
-                ha="center", va="bottom", fontsize=7.5, color=sub_color,
+                ha="center",
+                va="bottom",
+                fontsize=7.5,
+                color=sub_color,
             )
     ax.set_xticks(list(x))
     ax.set_xticklabels(months, fontsize=9, color=txt_color)
     ax.tick_params(axis="y", labelsize=8, colors=txt_color)
     ax.tick_params(axis="x", colors=txt_color)
     ax.yaxis.set_major_formatter(
-        plt.FuncFormatter(lambda v, _: f"₹{v / 1000:.0f}k" if v >= 1000 else f"₹{v:.0f}")
+        plt.FuncFormatter(
+            lambda v, _: f"₹{v / 1000:.0f}k" if v >= 1000 else f"₹{v:.0f}"
+        )
     )
     ax.set_axisbelow(True)
     ax.yaxis.grid(True, color=grid_color, linewidth=0.8)
@@ -110,7 +138,9 @@ def chart_income_vs_expense(monthly_inc, monthly_exp, dark_mode=False):
     legend = ax.legend(fontsize=9, frameon=False)
     for text in legend.get_texts():
         text.set_color(txt_color)
-    ax.set_title("Income vs Expense", fontsize=12, fontweight="bold", pad=10, color=txt_color)
+    ax.set_title(
+        "Income vs Expense", fontsize=12, fontweight="bold", pad=10, color=txt_color
+    )
     fig.tight_layout()
     return make_chart(fig)
 
@@ -126,21 +156,37 @@ def chart_monthly_trend(monthly_spending, dark_mode=False):
     fig.patch.set_alpha(0)
     ax.fill_between(months, values, alpha=0.12, color="#008080", zorder=1)
     ax.plot(
-        months, values, color="#008080", linewidth=2.5, marker="o", markersize=7,
-        markerfacecolor="white", markeredgecolor="#008080", markeredgewidth=2, zorder=2,
+        months,
+        values,
+        color="#008080",
+        linewidth=2.5,
+        marker="o",
+        markersize=7,
+        markerfacecolor="white",
+        markeredgecolor="#008080",
+        markeredgewidth=2,
+        zorder=2,
     )
     max_val = max(values) if values else 1
     for i, (m, v) in enumerate(zip(months, values)):
         ax.text(
-            i, v + max_val * 0.03, f"₹{v:,.0f}",
-            ha="center", va="bottom", fontsize=8, color="#008080", fontweight="bold",
+            i,
+            v + max_val * 0.03,
+            f"₹{v:,.0f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="#008080",
+            fontweight="bold",
         )
     ax.set_xticks(range(len(months)))
     ax.set_xticklabels(months, fontsize=9, color=txt_color)
     ax.tick_params(axis="y", labelsize=8, colors=txt_color)
     ax.tick_params(axis="x", colors=txt_color)
     ax.yaxis.set_major_formatter(
-        plt.FuncFormatter(lambda v, _: f"₹{v / 1000:.0f}k" if v >= 1000 else f"₹{v:.0f}")
+        plt.FuncFormatter(
+            lambda v, _: f"₹{v / 1000:.0f}k" if v >= 1000 else f"₹{v:.0f}"
+        )
     )
     ax.set_axisbelow(True)
     ax.yaxis.grid(True, color=grid_color, linewidth=0.8)
@@ -148,7 +194,13 @@ def chart_monthly_trend(monthly_spending, dark_mode=False):
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_color(grid_color)
     ax.spines["bottom"].set_color(grid_color)
-    ax.set_title("Monthly Spending Trend", fontsize=12, fontweight="bold", pad=10, color=txt_color)
+    ax.set_title(
+        "Monthly Spending Trend",
+        fontsize=12,
+        fontweight="bold",
+        pad=10,
+        color=txt_color,
+    )
     fig.tight_layout()
     return make_chart(fig)
 
@@ -163,21 +215,35 @@ def chart_category_breakdown(categories, dark_mode=False):
     labels = [c[0] for c in sorted_cats]
     values = [c[1] for c in sorted_cats]
     colors = [
-        "#008080", "#0984E3", "#00CEC9", "#00b894",
-        "#55EFC4", "#FDCB6E", "#FF924D", "#FD79A8",
+        "#008080",
+        "#0984E3",
+        "#00CEC9",
+        "#00b894",
+        "#55EFC4",
+        "#FDCB6E",
+        "#FF924D",
+        "#FD79A8",
     ]
     fig, ax = plt.subplots(figsize=(6, max(3.5, len(labels) * 0.5)))
     fig.patch.set_alpha(0)
     bars = ax.barh(
-        labels[::-1], values[::-1],
-        color=colors[: len(values)], edgecolor="white", linewidth=1, height=0.6, zorder=3,
+        labels[::-1],
+        values[::-1],
+        color=colors[: len(values)],
+        edgecolor="white",
+        linewidth=1,
+        height=0.6,
+        zorder=3,
     )
     max_val = max(values) if values else 1
     for bar, val in zip(bars, values[::-1]):
         ax.text(
             bar.get_width() + max_val * 0.01,
             bar.get_y() + bar.get_height() / 2,
-            f"₹{val:,.0f}", va="center", fontsize=8.5, color=sub_color,
+            f"₹{val:,.0f}",
+            va="center",
+            fontsize=8.5,
+            color=sub_color,
         )
     ax.set_axisbelow(True)
     ax.xaxis.grid(True, color=grid_color, linewidth=0.8)
@@ -188,15 +254,20 @@ def chart_category_breakdown(categories, dark_mode=False):
     ax.tick_params(axis="y", labelsize=9, colors=txt_color)
     ax.tick_params(axis="x", labelsize=8, colors=txt_color)
     ax.xaxis.set_major_formatter(
-        plt.FuncFormatter(lambda v, _: f"₹{v / 1000:.0f}k" if v >= 1000 else f"₹{v:.0f}")
+        plt.FuncFormatter(
+            lambda v, _: f"₹{v / 1000:.0f}k" if v >= 1000 else f"₹{v:.0f}"
+        )
     )
-    ax.set_title("Category Breakdown", fontsize=12, fontweight="bold", pad=10, color=txt_color)
+    ax.set_title(
+        "Category Breakdown", fontsize=12, fontweight="bold", pad=10, color=txt_color
+    )
     fig.tight_layout()
     return make_chart(fig)
 
 
 def get_analysis_data(user_id, Expense, Income):
     from datetime import datetime, timedelta, timezone
+
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     month_start = datetime(now.year, now.month, 1)
     six_months_ago = now - timedelta(days=180)
@@ -219,7 +290,9 @@ def get_analysis_data(user_id, Expense, Income):
     for exp in all_expenses:
         key = exp.date.strftime("%b %Y")
         monthly_spending[key] += exp.amount
-    sorted_months = sorted(monthly_spending.keys(), key=lambda m: datetime.strptime(m, "%b %Y"))
+    sorted_months = sorted(
+        monthly_spending.keys(), key=lambda m: datetime.strptime(m, "%b %Y")
+    )
     monthly_spending_ordered = {m: monthly_spending[m] for m in sorted_months}
 
     monthly_income = defaultdict(float)

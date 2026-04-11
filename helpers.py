@@ -234,7 +234,9 @@ def run_monthly_reset(user):
             g.saved_amount = round(min(g.target_amount, g.saved_amount + share), 2)
             goals_funded += share
 
-    net_leftover = round(max(0.0, prev_income_total - prev_expense_total - goals_funded), 2)
+    net_leftover = round(
+        max(0.0, prev_income_total - prev_expense_total - goals_funded), 2
+    )
     user.savings_balance = round((user.savings_balance or 0.0) + net_leftover, 2)
 
     db.session.commit()

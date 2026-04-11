@@ -16,9 +16,18 @@ from bs4 import BeautifulSoup
 
 
 _DATE_FMTS = [
-    "%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%d-%m-%y",
-    "%Y-%m-%d", "%m/%d/%Y", "%d %b %Y", "%d %b %y",
-    "%d-%b-%Y", "%d-%b-%y", "%d/%b/%Y", "%d/%b/%y",
+    "%d/%m/%Y",
+    "%d-%m-%Y",
+    "%d/%m/%y",
+    "%d-%m-%y",
+    "%Y-%m-%d",
+    "%m/%d/%Y",
+    "%d %b %Y",
+    "%d %b %y",
+    "%d-%b-%Y",
+    "%d-%b-%y",
+    "%d/%b/%Y",
+    "%d/%b/%y",
 ]
 
 
@@ -55,10 +64,31 @@ def _make_txn(date_obj, desc, amount, txn_type):
 def _detect_columns(headers):
     h = [str(x).lower().strip() for x in headers]
     date_kw = ["date", "txn date", "value date", "transaction date", "posting date"]
-    desc_kw = ["description", "narration", "particulars", "remarks", "details",
-               "transaction remarks", "transaction details"]
-    debit_kw = ["debit", "withdrawal", "dr", "debit amount", "withdrawal amount", "amount (dr)"]
-    credit_kw = ["credit", "deposit", "cr", "credit amount", "deposit amount", "amount (cr)"]
+    desc_kw = [
+        "description",
+        "narration",
+        "particulars",
+        "remarks",
+        "details",
+        "transaction remarks",
+        "transaction details",
+    ]
+    debit_kw = [
+        "debit",
+        "withdrawal",
+        "dr",
+        "debit amount",
+        "withdrawal amount",
+        "amount (dr)",
+    ]
+    credit_kw = [
+        "credit",
+        "deposit",
+        "cr",
+        "credit amount",
+        "deposit amount",
+        "amount (cr)",
+    ]
     amount_kw = ["amount", "net amount"]
 
     def find(kws):
@@ -85,7 +115,7 @@ def _rows_to_txns(rows, header_idx):
         return []
     di, ni, dbi, cri, ami = result
     txns = []
-    for row in rows[header_idx + 1:]:
+    for row in rows[header_idx + 1 :]:
         max_col = max(x for x in [di, ni, dbi, cri, ami] if x is not None)
         if len(row) <= max_col:
             continue
@@ -215,7 +245,11 @@ def parse_bank_statement_pdf(content_bytes):
                 desc = re.sub(r"\s+", " ", desc).strip(" ,.-/")
                 if not desc:
                     desc = "Bank transaction"
-                amt = _clean_amount(amounts[-2]) if len(amounts) >= 2 else _clean_amount(amounts[-1])
+                amt = (
+                    _clean_amount(amounts[-2])
+                    if len(amounts) >= 2
+                    else _clean_amount(amounts[-1])
+                )
                 if amt and amt > 0:
                     low = line.lower()
                     if re.search(r"\bcr\b|\bcredit\b|\bdeposit\b", low):
@@ -257,47 +291,188 @@ def parse_bank_statement(file_bytes, filename, password=None):
 
 
 IMAP_PRESETS = {
-    "gmail":   {"host": "imap.gmail.com",        "port": 993},
+    "gmail": {"host": "imap.gmail.com", "port": 993},
     "outlook": {"host": "imap-mail.outlook.com", "port": 993},
-    "yahoo":   {"host": "imap.mail.yahoo.com",   "port": 993},
+    "yahoo": {"host": "imap.mail.yahoo.com", "port": 993},
     "hotmail": {"host": "imap-mail.outlook.com", "port": 993},
-    "icloud":  {"host": "imap.mail.me.com",      "port": 993},
+    "icloud": {"host": "imap.mail.me.com", "port": 993},
 }
 
 FINANCIAL_SUBJECT_KEYWORDS = [
-    "transaction", "payment", "purchase", "receipt", "order", "invoice",
-    "debit", "credit", "charged", "statement", "bill", "transfer",
-    "alert", "notification", "confirmation", "refund", "deposit",
-    "subscription", "auto-pay", "autopay", "due", "amount",
+    "transaction",
+    "payment",
+    "purchase",
+    "receipt",
+    "order",
+    "invoice",
+    "debit",
+    "credit",
+    "charged",
+    "statement",
+    "bill",
+    "transfer",
+    "alert",
+    "notification",
+    "confirmation",
+    "refund",
+    "deposit",
+    "subscription",
+    "auto-pay",
+    "autopay",
+    "due",
+    "amount",
 ]
 
 FINANCIAL_SENDER_KEYWORDS = [
-    "bank", "paypal", "paytm", "stripe", "amazon", "netflix", "spotify",
-    "apple", "google", "microsoft", "hulu", "prime", "uber", "lyft",
-    "razorpay", "hdfc", "sbi", "icici", "axis", "netsuite", "venmo",
-    "cashapp", "zelle", "chase", "citibank", "wells", "fargo",
+    "bank",
+    "paypal",
+    "paytm",
+    "stripe",
+    "amazon",
+    "netflix",
+    "spotify",
+    "apple",
+    "google",
+    "microsoft",
+    "hulu",
+    "prime",
+    "uber",
+    "lyft",
+    "razorpay",
+    "hdfc",
+    "sbi",
+    "icici",
+    "axis",
+    "netsuite",
+    "venmo",
+    "cashapp",
+    "zelle",
+    "chase",
+    "citibank",
+    "wells",
+    "fargo",
 ]
 
 CATEGORY_KEYWORD_MAP = [
-    (["grocery", "supermarket", "safeway", "kroger", "walmart", "costco", "whole foods", "amazon fresh", "trader joe"], ("Food & Groceries", "Groceries")),
-    (["restaurant", "dining", "bistro", "cafe", "diner", "eatery", "sushi", "pizza", "burger"], ("Food & Groceries", "Dining Out")),
+    (
+        [
+            "grocery",
+            "supermarket",
+            "safeway",
+            "kroger",
+            "walmart",
+            "costco",
+            "whole foods",
+            "amazon fresh",
+            "trader joe",
+        ],
+        ("Food & Groceries", "Groceries"),
+    ),
+    (
+        [
+            "restaurant",
+            "dining",
+            "bistro",
+            "cafe",
+            "diner",
+            "eatery",
+            "sushi",
+            "pizza",
+            "burger",
+        ],
+        ("Food & Groceries", "Dining Out"),
+    ),
     (["coffee", "starbucks", "dunkin", "costa"], ("Food & Groceries", "Coffee Shops")),
-    (["food delivery", "doordash", "grubhub", "ubereats", "zomato", "swiggy"], ("Food & Groceries", "Food Delivery")),
-    (["fast food", "mcdonald", "kfc", "subway", "domino", "taco bell", "wendy", "burger king"], ("Food & Groceries", "Fast Food")),
-    (["uber", "lyft", "taxi", "rideshare", "ola", "grab"], ("Transportation", "Taxi/Rideshare")),
-    (["fuel", "gas station", "petrol", "shell", "bp ", "chevron", "exxon"], ("Transportation", "Fuel")),
-    (["metro", "bus", "transit", "train", "subway pass", "rail"], ("Transportation", "Public Transport")),
-    (["netflix", "hulu", "disney+", "hbo", "prime video", "apple tv", "peacock", "paramount"], ("Entertainment", "Streaming Services")),
-    (["spotify", "apple music", "tidal", "deezer", "pandora", "youtube music"], ("Entertainment", "Music Streaming")),
-    (["gym", "fitness", "planet fitness", "equinox", "crunch"], ("Personal & Lifestyle", "Gym Membership")),
+    (
+        ["food delivery", "doordash", "grubhub", "ubereats", "zomato", "swiggy"],
+        ("Food & Groceries", "Food Delivery"),
+    ),
+    (
+        [
+            "fast food",
+            "mcdonald",
+            "kfc",
+            "subway",
+            "domino",
+            "taco bell",
+            "wendy",
+            "burger king",
+        ],
+        ("Food & Groceries", "Fast Food"),
+    ),
+    (
+        ["uber", "lyft", "taxi", "rideshare", "ola", "grab"],
+        ("Transportation", "Taxi/Rideshare"),
+    ),
+    (
+        ["fuel", "gas station", "petrol", "shell", "bp ", "chevron", "exxon"],
+        ("Transportation", "Fuel"),
+    ),
+    (
+        ["metro", "bus", "transit", "train", "subway pass", "rail"],
+        ("Transportation", "Public Transport"),
+    ),
+    (
+        [
+            "netflix",
+            "hulu",
+            "disney+",
+            "hbo",
+            "prime video",
+            "apple tv",
+            "peacock",
+            "paramount",
+        ],
+        ("Entertainment", "Streaming Services"),
+    ),
+    (
+        ["spotify", "apple music", "tidal", "deezer", "pandora", "youtube music"],
+        ("Entertainment", "Music Streaming"),
+    ),
+    (
+        ["gym", "fitness", "planet fitness", "equinox", "crunch"],
+        ("Personal & Lifestyle", "Gym Membership"),
+    ),
     (["electricity", "electric", "power bill"], ("Utilities", "Electricity")),
     (["water bill"], ("Utilities", "Water")),
-    (["internet", "broadband", "comcast", "xfinity", "att", "verizon", "spectrum"], ("Utilities", "Internet")),
-    (["mobile", "phone bill", "t-mobile", "sprint", "cricket"], ("Utilities", "Mobile Phone")),
-    (["amazon", "ebay", "etsy", "shopify", "online shopping", "shop", "purchase from"], ("Shopping", "Online Shopping")),
-    (["doctor", "clinic", "hospital", "medical", "health", "dental", "pharmacy", "prescription"], ("Healthcare", "Doctor Visits")),
+    (
+        ["internet", "broadband", "comcast", "xfinity", "att", "verizon", "spectrum"],
+        ("Utilities", "Internet"),
+    ),
+    (
+        ["mobile", "phone bill", "t-mobile", "sprint", "cricket"],
+        ("Utilities", "Mobile Phone"),
+    ),
+    (
+        [
+            "amazon",
+            "ebay",
+            "etsy",
+            "shopify",
+            "online shopping",
+            "shop",
+            "purchase from",
+        ],
+        ("Shopping", "Online Shopping"),
+    ),
+    (
+        [
+            "doctor",
+            "clinic",
+            "hospital",
+            "medical",
+            "health",
+            "dental",
+            "pharmacy",
+            "prescription",
+        ],
+        ("Healthcare", "Doctor Visits"),
+    ),
     (["insurance", "policy", "premium"], ("Insurance", "Health Insurance")),
-    (["school", "tuition", "university", "college", "course", "udemy", "coursera"], ("Education", "School Tuition")),
+    (
+        ["school", "tuition", "university", "college", "course", "udemy", "coursera"],
+        ("Education", "School Tuition"),
+    ),
     (["rent", "lease", "landlord"], ("Housing", "Rent")),
     (["salary", "payroll", "wages", "paycheck"], ("Income", "Salary")),
     (["refund", "cashback", "reward"], ("Income", "Refund")),
@@ -344,13 +519,13 @@ def _ei_extract_text(msg):
 
 def _ei_parse_amount(text):
     patterns = [
-        r'\$\s*([\d,]+\.?\d*)',
-        r'USD\s+([\d,]+\.?\d*)',
-        r'Rs\.?\s*([\d,]+\.?\d*)',
-        r'INR\s+([\d,]+\.?\d*)',
-        r'(?:amount|total|charged|debit|credit)[:\s]+(?:of\s+)?\$?\s*([\d,]+\.?\d*)',
-        r'payment of\s+\$?\s*([\d,]+\.?\d*)',
-        r'\b([\d,]{1,10}\.\d{2})\b',
+        r"\$\s*([\d,]+\.?\d*)",
+        r"USD\s+([\d,]+\.?\d*)",
+        r"Rs\.?\s*([\d,]+\.?\d*)",
+        r"INR\s+([\d,]+\.?\d*)",
+        r"(?:amount|total|charged|debit|credit)[:\s]+(?:of\s+)?\$?\s*([\d,]+\.?\d*)",
+        r"payment of\s+\$?\s*([\d,]+\.?\d*)",
+        r"\b([\d,]{1,10}\.\d{2})\b",
     ]
     for pat in patterns:
         m = re.search(pat, text, re.IGNORECASE)
@@ -375,8 +550,16 @@ def _ei_guess_category(subject, body):
 def _ei_is_income(subject, body):
     combined = (subject + " " + body).lower()
     income_signals = [
-        "received", "credited to your account", "deposit", "refund", "cashback",
-        "salary", "payroll", "transfer received", "payment received", "reward",
+        "received",
+        "credited to your account",
+        "deposit",
+        "refund",
+        "cashback",
+        "salary",
+        "payroll",
+        "transfer received",
+        "payment received",
+        "reward",
     ]
     return any(s in combined for s in income_signals)
 
@@ -438,17 +621,19 @@ def scan_imap_emails(host, port, email_addr, password, days=30):
             except Exception:
                 txn_date = datetime.utcnow().strftime("%Y-%m-%d")
 
-            transactions.append({
-                "msg_id": msg_id,
-                "subject": subject[:120],
-                "from": from_addr[:100],
-                "date": txn_date,
-                "amount": amount,
-                "type": "income" if is_income else "expense",
-                "main_cat": main_cat,
-                "sub_cat": sub_cat,
-                "description": subject[:200],
-            })
+            transactions.append(
+                {
+                    "msg_id": msg_id,
+                    "subject": subject[:120],
+                    "from": from_addr[:100],
+                    "date": txn_date,
+                    "amount": amount,
+                    "type": "income" if is_income else "expense",
+                    "main_cat": main_cat,
+                    "sub_cat": sub_cat,
+                    "description": subject[:200],
+                }
+            )
         except Exception:
             continue
 

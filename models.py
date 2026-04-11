@@ -39,7 +39,9 @@ class User(UserMixin, db.Model):
 
 class Income(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    )
     source = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     date_received = db.Column(db.DateTime, default=_now, index=True)
@@ -47,14 +49,14 @@ class Income(db.Model):
     description = db.Column(db.String(200))
     is_recurring = db.Column(db.Boolean, default=False)
 
-    __table_args__ = (
-        db.Index("ix_income_user_date", "user_id", "date_received"),
-    )
+    __table_args__ = (db.Index("ix_income_user_date", "user_id", "date_received"),)
 
 
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    )
     category = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     date = db.Column(db.DateTime, default=_now, index=True)
@@ -74,7 +76,9 @@ class Expense(db.Model):
 
 class Goal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    )
     name = db.Column(db.String(200), nullable=False)
     target_amount = db.Column(db.Float, nullable=False)
     saved_amount = db.Column(db.Float, default=0.0)
