@@ -506,9 +506,12 @@
       });
     }
 
-    // Capture the browser's install prompt before it disappears
+    // Capture the browser's install prompt.
+    // Do NOT call e.preventDefault() — doing so causes Chrome to replace the
+    // native "Add to Home Screen" install dialog with a plain "Create shortcut"
+    // fallback when the user taps the browser menu option.  We still store the
+    // event so our in-app install button can call .prompt() directly.
     window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
       _deferredInstallPrompt = e;
       // Show any install buttons we have on the page
       document.querySelectorAll('.pwa-install-btn').forEach(btn => {
