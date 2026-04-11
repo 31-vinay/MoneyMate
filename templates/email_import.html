@@ -33,7 +33,7 @@
     background: var(--gradient-brand);
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 4px 14px rgba(0,128,128,0.28);
+    box-shadow: 0 4px 14px rgba(0, 128, 128, 0.28);
   }
 
   .import-tab-btn:not(.active):hover {
@@ -127,7 +127,9 @@
     margin-bottom: 20px;
   }
 
-  .security-note strong { color: var(--text-primary); }
+  .security-note strong {
+    color: var(--text-primary);
+  }
 
   /* ── Provider chips ── */
   .provider-chips {
@@ -162,10 +164,11 @@
     background: var(--gradient-brand);
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 2px 10px rgba(0,128,128,0.22);
+    box-shadow: 0 2px 10px rgba(0, 128, 128, 0.22);
   }
 
-  .provider-chip svg, .provider-chip .chip-icon {
+  .provider-chip svg,
+  .provider-chip .chip-icon {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
@@ -180,7 +183,9 @@
   }
 
   @media (max-width: 600px) {
-    .cred-grid { grid-template-columns: 1fr; }
+    .cred-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .cred-label {
@@ -203,7 +208,9 @@
     margin-left: 4px;
   }
 
-  .cred-label a:hover { text-decoration: underline; }
+  .cred-label a:hover {
+    text-decoration: underline;
+  }
 
   /* ── Lookback select ── */
   .lookback-row {
@@ -239,11 +246,23 @@
     vertical-align: middle;
   }
 
-  .txn-table tr:last-child td { border-bottom: none; }
-  .txn-table tr:hover td { background: rgba(0, 128, 128, 0.03); }
+  .txn-table tr:last-child td {
+    border-bottom: none;
+  }
 
-  .badge-income  { background: rgba(0, 184, 148, 0.12); color: #00b894; }
-  .badge-expense { background: rgba(255, 146, 77, 0.1);  color: #FF924D; }
+  .txn-table tr:hover td {
+    background: rgba(0, 128, 128, 0.03);
+  }
+
+  .badge-income {
+    background: rgba(0, 184, 148, 0.12);
+    color: #00b894;
+  }
+
+  .badge-expense {
+    background: rgba(255, 146, 77, 0.1);
+    color: #FF924D;
+  }
 
   .type-badge {
     display: inline-flex;
@@ -342,7 +361,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: rgba(0,184,148,0.12);
+    background: rgba(0, 184, 148, 0.12);
     color: #00b894;
     border-radius: 50px;
     padding: 4px 12px;
@@ -396,8 +415,10 @@
 
         <div class="security-note">
           <strong><i class="bi bi-shield-lock me-1"></i>Security note:</strong>
-          Your password is sent securely over SSL and only stored in your browser session — it is erased when you log out.
-          For Gmail / Outlook we strongly recommend using an <strong>App Password</strong> instead of your main password.
+          Your password is sent securely over SSL and only stored in your browser session — it is erased when you log
+          out.
+          For Gmail / Outlook we strongly recommend using an <strong>App Password</strong> instead of your main
+          password.
         </div>
 
         <div class="step-row">
@@ -425,7 +446,8 @@
         <div id="customHostRow" class="row g-2 mb-3 d-none">
           <div class="col-sm-8">
             <label class="cred-label">IMAP HOST</label>
-            <input type="text" class="form-control" id="imapHost" placeholder="e.g. imap.yourprovider.com" autocomplete="off">
+            <input type="text" class="form-control" id="imapHost" placeholder="e.g. imap.yourprovider.com"
+              autocomplete="off">
           </div>
           <div class="col-sm-4">
             <label class="cred-label">PORT</label>
@@ -442,17 +464,20 @@
             <div class="cred-label"><i class="bi bi-envelope"></i> Email Address</div>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-              <input type="email" class="form-control" id="imapEmail" placeholder="you@gmail.com" autocomplete="username">
+              <input type="email" class="form-control" id="imapEmail" placeholder="you@gmail.com"
+                autocomplete="username">
             </div>
           </div>
           <div>
             <div class="cred-label">
               <i class="bi bi-key"></i> App Password
-              <a href="https://support.google.com/accounts/answer/185833" target="_blank" class="ms-1" style="font-size:0.75rem;">(WHAT'S THIS?)</a>
+              <a href="https://support.google.com/accounts/answer/185833" target="_blank" class="ms-1"
+                style="font-size:0.75rem;">(WHAT'S THIS?)</a>
             </div>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-key"></i></span>
-              <input type="password" class="form-control" id="imapPassword" placeholder="App password or email password" autocomplete="new-password">
+              <input type="password" class="form-control" id="imapPassword" placeholder="App password or email password"
+                autocomplete="new-password">
               <button class="btn btn-outline-secondary" type="button" onclick="togglePwd()">
                 <i class="bi bi-eye" id="eyeIcon"></i>
               </button>
@@ -472,8 +497,8 @@
     </div>
 
     <!-- Step 2: Scan -->
-    <div class="ei-card {% if not imap_connected %}opacity-50{% endif %}" id="card-scan"
-         {% if not imap_connected %}style="pointer-events:none;"{% endif %}>
+    <div class="ei-card {% if not imap_connected %}opacity-50{% endif %}" id="card-scan" {% if not imap_connected
+      %}style="pointer-events:none;" {% endif %}>
       <div class="ei-card-header">
         <div class="card-icon"><i class="bi bi-search-heart"></i></div>
         <div>
@@ -494,15 +519,15 @@
             </select>
           </div>
           <div class="col-sm-auto">
-            <button class="btn btn-primary rounded-pill px-4" id="btnScan" onclick="scanEmails()"
-                    {% if not imap_connected %}disabled{% endif %}>
+            <button class="btn btn-primary rounded-pill px-4" id="btnScan" onclick="scanEmails()" {% if not
+              imap_connected %}disabled{% endif %}>
               <i class="bi bi-search me-2"></i>Scan Emails
               <span class="spinner-border spinner-border-sm ms-2 d-none" id="scanSpinner"></span>
             </button>
           </div>
         </div>
         <div id="scanError" class="alert alert-danger d-none"></div>
-        <div id="scanInfo"  class="alert alert-info  d-none"></div>
+        <div id="scanInfo" class="alert alert-info  d-none"></div>
       </div>
     </div>
 
@@ -528,7 +553,7 @@
           </button>
         </div>
         <div id="eImportSuccess" class="alert alert-success d-none"></div>
-        <div id="eImportError"   class="alert alert-danger  d-none"></div>
+        <div id="eImportError" class="alert alert-danger  d-none"></div>
         <div class="table-responsive">
           <table class="txn-table" id="eTxnTable">
             <thead>
@@ -584,7 +609,8 @@
         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('stmtFile').click()">
           <i class="bi bi-cloud-arrow-up"></i>
           <div class="upload-title">Click to browse or drag &amp; drop</div>
-          <div class="upload-sub">PDF, Excel (.xlsx / .xls), CSV — or a <strong>ZIP</strong> containing any of those · Max 20 MB</div>
+          <div class="upload-sub">PDF, Excel (.xlsx / .xls), CSV — or a <strong>ZIP</strong> containing any of those ·
+            Max 20 MB</div>
           <div class="file-chosen d-none" id="fileChosen"></div>
         </div>
         <input type="file" id="stmtFile" accept=".pdf,.xlsx,.xls,.csv,.zip" style="display:none"
@@ -659,7 +685,7 @@
           style="background:rgba(0,128,128,0.07);border-left:4px solid var(--brand-primary);border-radius:0 12px 12px 0;color:var(--text-secondary);font-size:0.83rem;padding:10px 14px;">
         </div>
         <div id="bImportSuccess" class="alert alert-success d-none"></div>
-        <div id="bImportError"   class="alert alert-danger  d-none"></div>
+        <div id="bImportError" class="alert alert-danger  d-none"></div>
         <div class="table-responsive">
           <table class="txn-table" id="bTxnTable">
             <thead>
@@ -677,7 +703,8 @@
         <div id="bEmptyResults" class="empty-state d-none">
           <i class="bi bi-inbox"></i>
           <p class="fw-semibold">No transactions detected in this file.</p>
-          <p class="small">Make sure your statement has standard column headers like Date, Description, Debit, and Credit.</p>
+          <p class="small">Make sure your statement has standard column headers like Date, Description, Debit, and
+            Credit.</p>
         </div>
       </div>
     </div>
@@ -695,9 +722,9 @@
   // ═══════════════════════════════════════════════════════════
   function switchTab(tab) {
     document.getElementById('panel-email').classList.toggle('d-none', tab !== 'email');
-    document.getElementById('panel-bank').classList.toggle('d-none',  tab !== 'bank');
+    document.getElementById('panel-bank').classList.toggle('d-none', tab !== 'bank');
     document.getElementById('tab-email').classList.toggle('active', tab === 'email');
-    document.getElementById('tab-bank').classList.toggle('active',  tab === 'bank');
+    document.getElementById('tab-bank').classList.toggle('active', tab === 'bank');
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -722,30 +749,30 @@
   }
 
   function togglePwd() {
-    const inp  = document.getElementById('imapPassword');
+    const inp = document.getElementById('imapPassword');
     const icon = document.getElementById('eyeIcon');
-    if (inp.type === 'password') { inp.type = 'text';     icon.className = 'bi bi-eye-slash'; }
-    else                          { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+    if (inp.type === 'password') {inp.type = 'text'; icon.className = 'bi bi-eye-slash';}
+    else {inp.type = 'password'; icon.className = 'bi bi-eye';}
   }
 
   async function connectEmail() {
-    const host  = document.getElementById('imapHost')?.value || selectedHost;
-    const port  = document.getElementById('imapPort')?.value || selectedPort;
+    const host = document.getElementById('imapHost')?.value || selectedHost;
+    const port = document.getElementById('imapPort')?.value || selectedPort;
     const email = document.getElementById('imapEmail').value.trim();
-    const pass  = document.getElementById('imapPassword').value;
+    const pass = document.getElementById('imapPassword').value;
     const errEl = document.getElementById('connectError');
-    const spin  = document.getElementById('connectSpinner');
-    const btn   = document.getElementById('btnConnect');
+    const spin = document.getElementById('connectSpinner');
+    const btn = document.getElementById('btnConnect');
 
     errEl.classList.add('d-none');
     spin.classList.remove('d-none');
     btn.disabled = true;
 
     try {
-      const res  = await fetch('/email-import/connect', {
-        method:  'POST',
+      const res = await fetch('/email-import/connect', {
+        method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body:    JSON.stringify({host, port, email, password: pass}),
+        body: JSON.stringify({host, port, email, password: pass}),
       });
       const data = await res.json();
       if (data.success) {
@@ -768,12 +795,12 @@
   });
 
   async function scanEmails() {
-    const days  = document.getElementById('scanDays').value;
+    const days = document.getElementById('scanDays').value;
     const errEl = document.getElementById('scanError');
-    const infoEl= document.getElementById('scanInfo');
-    const spin  = document.getElementById('scanSpinner');
-    const btn   = document.getElementById('btnScan');
-    const card  = document.getElementById('card-email-results');
+    const infoEl = document.getElementById('scanInfo');
+    const spin = document.getElementById('scanSpinner');
+    const btn = document.getElementById('btnScan');
+    const card = document.getElementById('card-email-results');
 
     errEl.classList.add('d-none');
     infoEl.textContent = 'Scanning your inbox… this may take a moment.';
@@ -783,10 +810,10 @@
     card.classList.add('d-none');
 
     try {
-      const res  = await fetch('/email-import/scan', {
-        method:  'POST',
+      const res = await fetch('/email-import/scan', {
+        method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body:    JSON.stringify({days: parseInt(days)}),
+        body: JSON.stringify({days: parseInt(days)}),
       });
       const data = await res.json();
       infoEl.classList.add('d-none');
@@ -810,22 +837,22 @@
   }
 
   function renderEmailResults(txns) {
-    const tbody    = document.getElementById('eTxnBody');
-    const empty    = document.getElementById('eEmptyResults');
+    const tbody = document.getElementById('eTxnBody');
+    const empty = document.getElementById('eEmptyResults');
     const selCount = document.getElementById('eSelectedCount');
-    const btnImp   = document.getElementById('eBtnImport');
-    const selAll   = document.getElementById('eSelectAll');
+    const btnImp = document.getElementById('eBtnImport');
+    const selAll = document.getElementById('eSelectAll');
 
     tbody.innerHTML = '';
     selCount.textContent = '0 selected';
     btnImp.disabled = true;
-    selAll.checked  = false;
+    selAll.checked = false;
 
-    if (!txns.length) { empty.classList.remove('d-none'); return; }
+    if (!txns.length) {empty.classList.remove('d-none'); return;}
     empty.classList.add('d-none');
 
     txns.forEach((t, i) => {
-      const isIncome  = t.type === 'income';
+      const isIncome = t.type === 'income';
       const typeBadge = isIncome
         ? `<span class="type-badge badge-income"><i class="bi bi-arrow-down-circle-fill"></i> Income</span>`
         : `<span class="type-badge badge-expense"><i class="bi bi-arrow-up-circle-fill"></i> Expense</span>`;
@@ -848,17 +875,17 @@
 
   function eUpdateCount() {
     const checked = document.querySelectorAll('.e-txn-check:checked').length;
-    const all     = document.querySelectorAll('.e-txn-check').length;
+    const all = document.querySelectorAll('.e-txn-check').length;
     document.getElementById('eSelectedCount').textContent = `${checked} selected`;
     document.getElementById('eBtnImport').disabled = checked === 0;
-    document.getElementById('eSelectAll').checked  = checked === all && all > 0;
+    document.getElementById('eSelectAll').checked = checked === all && all > 0;
   }
 
   async function emailImportSelected() {
     const successEl = document.getElementById('eImportSuccess');
-    const errEl     = document.getElementById('eImportError');
-    const spin      = document.getElementById('eImportSpinner');
-    const btn       = document.getElementById('eBtnImport');
+    const errEl = document.getElementById('eImportError');
+    const spin = document.getElementById('eImportSpinner');
+    const btn = document.getElementById('eBtnImport');
 
     successEl.classList.add('d-none');
     errEl.classList.add('d-none');
@@ -871,10 +898,10 @@
     });
 
     try {
-      const res  = await fetch('/email-import/import', {
-        method:  'POST',
+      const res = await fetch('/email-import/import', {
+        method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body:    JSON.stringify({transactions: selected}),
+        body: JSON.stringify({transactions: selected}),
       });
       const data = await res.json();
       if (data.success) {
@@ -894,7 +921,7 @@
     btn.disabled = false;
   }
 
-  ['imapEmail','imapPassword','imapHost','imapPort'].forEach(id => {
+  ['imapEmail', 'imapPassword', 'imapHost', 'imapPort'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => {
       if (e.key === 'Enter') connectEmail();
     });
@@ -910,7 +937,7 @@
     const chosen = document.getElementById('fileChosen');
     if (f) {
       const ext = f.name.split('.').pop().toLowerCase();
-      const icon  = ext === 'zip' ? '🗜️' : '📄';
+      const icon = ext === 'zip' ? '🗜️' : '📄';
       const label = ext === 'zip' ? ' (ZIP archive — statements will be extracted automatically)' : '';
       chosen.innerHTML = icon + ' <strong>' + f.name + '</strong><span style="color:var(--text-muted);font-size:0.82rem;">' + label + '</span>';
       chosen.classList.remove('d-none');
@@ -920,8 +947,8 @@
 
   const zone = document.getElementById('uploadZone');
   if (zone) {
-    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
-    zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+    zone.addEventListener('dragover', e => {e.preventDefault(); zone.classList.add('drag-over');});
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
     zone.addEventListener('drop', e => {
       e.preventDefault();
       zone.classList.remove('drag-over');
@@ -933,20 +960,20 @@
   }
 
   function togglePwVisibility() {
-    const inp  = document.getElementById('stmtPassword');
+    const inp = document.getElementById('stmtPassword');
     const icon = document.getElementById('pwEyeIcon');
-    if (inp.type === 'password') { inp.type = 'text';     icon.className = 'bi bi-eye-slash'; }
-    else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+    if (inp.type === 'password') {inp.type = 'text'; icon.className = 'bi bi-eye-slash';}
+    else {inp.type = 'password'; icon.className = 'bi bi-eye';}
   }
 
   async function parseStatement() {
     const f = document.getElementById('stmtFile').files[0];
     if (!f) return;
-    const errEl   = document.getElementById('parseError');
-    const spin    = document.getElementById('parseSpinner');
-    const btn     = document.getElementById('btnParse');
-    const card    = document.getElementById('card-bank-results');
-    const pwRow   = document.getElementById('passwordRow');
+    const errEl = document.getElementById('parseError');
+    const spin = document.getElementById('parseSpinner');
+    const btn = document.getElementById('btnParse');
+    const card = document.getElementById('card-bank-results');
+    const pwRow = document.getElementById('passwordRow');
     const pwInput = document.getElementById('stmtPassword');
 
     errEl.classList.add('d-none');
@@ -960,7 +987,7 @@
       const pw = pwInput ? pwInput.value.trim() : '';
       if (pw) fd.append('password', pw);
 
-      const res  = await fetch('/bank-statement/upload', { method: 'POST', body: fd });
+      const res = await fetch('/bank-statement/upload', {method: 'POST', body: fd});
       const data = await res.json();
 
       if (data.success) {
@@ -973,7 +1000,7 @@
           srcNote.textContent = 'Parsed from: ' + data.source;
           srcNote.classList.remove('d-none');
         }
-        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.scrollIntoView({behavior: 'smooth', block: 'start'});
       } else {
         if (data.needs_password) {
           pwRow.classList.remove('d-none');
@@ -993,22 +1020,22 @@
   }
 
   function renderResults(txns) {
-    const tbody    = document.getElementById('bTxnBody');
-    const empty    = document.getElementById('bEmptyResults');
+    const tbody = document.getElementById('bTxnBody');
+    const empty = document.getElementById('bEmptyResults');
     const selCount = document.getElementById('bSelectedCount');
-    const btnImp   = document.getElementById('bBtnImport');
-    const selAll   = document.getElementById('bSelectAll');
+    const btnImp = document.getElementById('bBtnImport');
+    const selAll = document.getElementById('bSelectAll');
 
     tbody.innerHTML = '';
     selCount.textContent = '0 selected';
     btnImp.disabled = true;
-    selAll.checked  = false;
+    selAll.checked = false;
 
-    if (!txns.length) { empty.classList.remove('d-none'); return; }
+    if (!txns.length) {empty.classList.remove('d-none'); return;}
     empty.classList.add('d-none');
 
     txns.forEach((t, i) => {
-      const isIncome  = t.type === 'income';
+      const isIncome = t.type === 'income';
       const typeBadge = isIncome
         ? `<span class="type-badge badge-income"><i class="bi bi-arrow-down-circle-fill"></i> Income</span>`
         : `<span class="type-badge badge-expense"><i class="bi bi-arrow-up-circle-fill"></i> Expense</span>`;
@@ -1031,17 +1058,17 @@
 
   function updateCount() {
     const checked = document.querySelectorAll('.txn-check:checked').length;
-    const all     = document.querySelectorAll('.txn-check').length;
+    const all = document.querySelectorAll('.txn-check').length;
     document.getElementById('bSelectedCount').textContent = `${checked} selected`;
     document.getElementById('bBtnImport').disabled = checked === 0;
-    document.getElementById('bSelectAll').checked  = checked === all && all > 0;
+    document.getElementById('bSelectAll').checked = checked === all && all > 0;
   }
 
   async function importSelected() {
     const successEl = document.getElementById('bImportSuccess');
-    const errEl     = document.getElementById('bImportError');
-    const spin      = document.getElementById('bImportSpinner');
-    const btn       = document.getElementById('bBtnImport');
+    const errEl = document.getElementById('bImportError');
+    const spin = document.getElementById('bImportSpinner');
+    const btn = document.getElementById('bBtnImport');
 
     successEl.classList.add('d-none');
     errEl.classList.add('d-none');
@@ -1054,10 +1081,10 @@
     });
 
     try {
-      const res  = await fetch('/bank-statement/import', {
-        method:  'POST',
+      const res = await fetch('/bank-statement/import', {
+        method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body:    JSON.stringify({ transactions: selected }),
+        body: JSON.stringify({transactions: selected}),
       });
       const data = await res.json();
       if (data.success) {
@@ -1095,7 +1122,7 @@
   //  SHARED UTIL
   // ═══════════════════════════════════════════════════════════
   function escHtml(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
 

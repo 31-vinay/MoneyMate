@@ -257,7 +257,7 @@
 
   // ── Multi-select logic ──
   const incSelectAll = document.getElementById('incSelectAll');
-  const incBulkBar   = document.getElementById('incBulkBar');
+  const incBulkBar = document.getElementById('incBulkBar');
   const incBulkCount = document.getElementById('incBulkCount');
 
   function getCheckedIncIds() {
@@ -292,7 +292,7 @@
 
   document.getElementById('incBulkClear').addEventListener('click', function () {
     document.querySelectorAll('.inc-row-check').forEach(cb => cb.checked = false);
-    if (incSelectAll) { incSelectAll.checked = false; incSelectAll.indeterminate = false; }
+    if (incSelectAll) {incSelectAll.checked = false; incSelectAll.indeterminate = false;}
     incBulkBar.style.display = 'none';
   });
 
