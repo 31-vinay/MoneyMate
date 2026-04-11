@@ -1199,9 +1199,46 @@ main {
   color: #55efc4;
 }
 
+.dark-mode .alert-success a,
+.dark-mode .alert-success .alert-link {
+  color: #ffffff;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.dark-mode .alert-success a:hover,
+.dark-mode .alert-success .alert-link:hover {
+  color: #d0fff4;
+}
+
+.dark-mode .alert-success .text-muted {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
 .dark-mode .alert-danger {
   background: rgba(255, 146, 77, 0.18);
   color: #ff7675;
+}
+
+.dark-mode .alert-danger a,
+.dark-mode .alert-danger .alert-link {
+  color: #ffffff;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.dark-mode .alert-info a,
+.dark-mode .alert-info .alert-link {
+  color: #ffffff;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.dark-mode .alert-warning a,
+.dark-mode .alert-warning .alert-link {
+  color: #ffffff;
+  text-decoration: underline;
+  font-weight: 700;
 }
 
 /* --- btn-close (Bootstrap X button) --- */
