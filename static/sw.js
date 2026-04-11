@@ -1,10 +1,12 @@
-const CACHE_VERSION = 'money-mate-v5';
+const CACHE_VERSION = 'money-mate-v6';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const DYNAMIC_CACHE = CACHE_VERSION + '-dynamic';
 
 const STATIC_ASSETS = [
   '/static/style.css',
   '/static/logo.png',
+  '/static/icon-192.png',
+  '/static/icon-512.png',
   '/static/manifest.json',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
