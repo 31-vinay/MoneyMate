@@ -184,12 +184,23 @@ def register():
         return redirect(url_for("dashboard"))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        flash("Account created! You can now log in.", "success")
-        return redirect(url_for("login"))
+        email_lower = form.email.data.strip().lower()
+        if User.query.filter(User.email.ilike(email_lower)).first():
+            form.email.errors.append("An account with this email already exists.")
+            return render_template("register.html", form=form)
+        if User.query.filter(User.username.ilike(form.username.data.strip())).first():
+            form.username.errors.append("This username is already taken.")
+            return render_template("register.html", form=form)
+        try:
+            user = User(username=form.username.data.strip(), email=email_lower)
+            user.set_password(form.password.data)
+            db.session.add(user)
+            db.session.commit()
+            flash("Account created! You can now log in.", "success")
+            return redirect(url_for("login"))
+        except Exception:
+            db.session.rollback()
+            flash("Something went wrong creating your account. Please try again.", "danger")
     return render_template("register.html", form=form)
 
 
