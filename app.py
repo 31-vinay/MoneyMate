@@ -884,7 +884,13 @@ def bulk_delete_income():
             f"Deleted {len(ids)} income entr{'y' if len(ids) == 1 else 'ies'}.",
             "success",
         )
-    days = request.form.get("days", "")
+    days_raw = request.form.get("days", "")
+    try:
+        days = int(days_raw)
+        if days <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        days = None
     return redirect(url_for("add_income", days=days) if days else url_for("add_income"))
 
 
@@ -904,7 +910,13 @@ def bulk_edit_income():
             f"Updated source for {len(incs)} income entr{'y' if len(incs) == 1 else 'ies'}.",
             "success",
         )
-    days = request.form.get("days", "")
+    days_raw = request.form.get("days", "")
+    try:
+        days = int(days_raw)
+        if days <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        days = None
     return redirect(url_for("add_income", days=days) if days else url_for("add_income"))
 
 
@@ -1134,7 +1146,13 @@ def bulk_delete_expenses():
         ).delete(synchronize_session=False)
         db.session.commit()
         flash(f"Deleted {len(ids)} expense{'s' if len(ids) != 1 else ''}.", "success")
-    days = request.form.get("days", "")
+    days_raw = request.form.get("days", "")
+    try:
+        days = int(days_raw)
+        if days <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        days = None
     return redirect(
         url_for("add_expense", days=days) if days else url_for("add_expense")
     )
@@ -1159,7 +1177,13 @@ def bulk_edit_expenses():
             f"Updated category for {len(exps)} expense{'s' if len(exps) != 1 else ''}.",
             "success",
         )
-    days = request.form.get("days", "")
+    days_raw = request.form.get("days", "")
+    try:
+        days = int(days_raw)
+        if days <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        days = None
     return redirect(
         url_for("add_expense", days=days) if days else url_for("add_expense")
     )
