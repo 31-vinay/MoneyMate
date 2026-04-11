@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mb-3 reveal">
+  <a href="{{ url_for('goal_detail', id=goal.id) }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back to Goal
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card reveal reveal-delay-1">
+      <div class="card-header">
+        <i class="bi bi-pencil-square me-2"></i>Edit Goal
+        <span class="badge ms-2" style="background:#008080;font-size:0.75rem;">#{{ goal.priority }}</span>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control", placeholder="e.g., Buy a Laptop, Emergency Fund, Vacation") }}
+            {% if form.name.errors %}
+            {% for err in form.name.errors %}<small class="text-danger d-block mt-1">{{ err }}</small>{% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              {{ form.target_amount.label(class="form-label") }}
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+                {{ form.target_amount(class="form-control", type="number", step="0.01", placeholder="50000",
+                id="edit_target") }}
+              </div>
+              {% if form.target_amount.errors %}
+              {% for err in form.target_amount.errors %}<small class="text-danger d-block mt-1">{{ err }}</small>{%
+              endfor %}
+              {% endif %}
+              <div class="field-feedback" id="fb_edit_target"></div>
+            </div>
+            <div class="col-md-6">
+              {{ form.monthly_savings.label(class="form-label") }}
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+                {{ form.monthly_savings(class="form-control", type="number", step="0.01", placeholder="2000",
+                id="edit_monthly") }}
+              </div>
+              <small class="text-muted">How much can you save monthly?</small>
+              {% if form.monthly_savings.errors %}
+              {% for err in form.monthly_savings.errors %}<small class="text-danger d-block mt-1">{{ err }}</small>{%
+              endfor %}
+              {% endif %}
+              <div class="field-feedback" id="fb_edit_monthly"></div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            {{ form.target_date.label(class="form-label") }}
+            {{ form.target_date(class="form-control", type="date") }}
+            <small class="text-muted">Optional: target completion date</small>
+          </div>
+
+          <div class="mb-4">
+            {{ form.priority.label(class="form-label") }}
+            {{ form.priority(class="form-select") }}
+            <small class="text-muted">Priority controls how savings &amp; bonus money is suggested across your
+              goals.</small>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="bi bi-check-circle me-2"></i>Save Changes
+            </button>
+            <a href="{{ url_for('goal_detail', id=goal.id) }}" class="btn btn-outline-secondary">
+              <i class="bi bi-x me-1"></i>Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Current values summary -->
+    <div class="card mt-3 reveal reveal-delay-2">
+      <div class="card-header" style="font-size:0.88rem;"><i class="bi bi-info-circle me-1"></i>Current Values</div>
+      <div class="card-body py-2">
+        <div class="row g-2 text-center">
+          <div class="col-4">
+            <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Saved</div>
+            <div class="fw-700" style="color:#00b894;">₹{{ "%.0f"|format(goal.saved_amount) }}</div>
+          </div>
+          <div class="col-4">
+            <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Target
+            </div>
+            <div class="fw-700">₹{{ "%.0f"|format(goal.target_amount) }}</div>
+          </div>
+          <div class="col-4">
+            <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Progress
+            </div>
+            <div class="fw-700" style="color:#008080;">{{ "%.1f"|format(goal.progress_percentage) }}%</div>
+          </div>
+        </div>
+        <div class="progress mt-2" style="height:6px;">
+          <div class="progress-bar bg-success" style="width:{{ goal.progress_percentage }}%;"></div>
+        </div>
+        <small class="text-muted d-block mt-1">Note: editing does not affect your saved amount.</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    function setFb(fbId, inputEl, ok, msg) {
+      var fb = document.getElementById(fbId);
+      if (!fb || !inputEl) return;
+      fb.innerHTML = (ok ? '<i class="bi bi-check-circle-fill"></i> ' : '<i class="bi bi-x-circle-fill"></i> ') + msg;
+      fb.className = 'field-feedback show ' + (ok ? 'valid' : 'invalid');
+      inputEl.classList.toggle('is-valid-animated', ok);
+      inputEl.classList.toggle('is-invalid-animated', !ok);
+    }
+    var tgt = document.getElementById('edit_target');
+    if (tgt) {
+      tgt.addEventListener('blur', function () {
+        if (!this.value) return;
+        var ok = parseFloat(this.value) > 0;
+        setFb('fb_edit_target', this, ok, ok ? 'Valid target amount.' : 'Target must be greater than 0.');
+      });
+    }
+    var mth = document.getElementById('edit_monthly');
+    if (mth) {
+      mth.addEventListener('blur', function () {
+        if (!this.value) return;
+        var ok = parseFloat(this.value) > 0;
+        setFb('fb_edit_monthly', this, ok, ok ? 'Monthly savings amount set.' : 'Savings must be greater than 0.');
+      });
+    }
+  })();
+</script>
+{% endblock %}

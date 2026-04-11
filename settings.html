@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .settings-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .settings-card {
+    border-radius: 20px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-card);
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0, 128, 128, 0.07);
+  }
+
+  .settings-card-header {
+    background: var(--gradient-brand);
+    color: white;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .settings-card-header .card-icon {
+    width: 42px;
+    height: 42px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .settings-card-header h5 {
+    font-weight: 700;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .settings-card-header p {
+    margin: 0;
+    opacity: 0.82;
+    font-size: 0.8rem;
+  }
+
+  .settings-card-body {
+    padding: 20px 24px;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    gap: 12px;
+  }
+
+  .info-row:last-child {
+    border-bottom: none;
+  }
+
+  .info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .info-value {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+  }
+
+  .mpin-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .mpin-enabled {
+    background: rgba(0, 184, 148, 0.12);
+    color: #00b894;
+  }
+
+  .mpin-disabled {
+    background: rgba(255, 146, 77, 0.1);
+    color: #FF924D;
+  }
+
+  .settings-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 16px 0;
+  }
+
+  .settings-section-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+
+  .invite-box {
+    background: var(--bg-body);
+    border: 1.5px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .invite-box .invite-url {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+    flex: 1;
+  }
+</style>
+
+<div class="settings-wrap">
+  <div class="page-header mb-4">
+    <h2 class="page-title"><i class="bi bi-gear-fill me-2"></i>Settings</h2>
+    <p class="text-muted mb-0">Manage your account, notifications, and preferences</p>
+  </div>
+
+  <!-- ── Account ── -->
+  <div class="settings-card reveal">
+    <div class="settings-card-header">
+      <div class="card-icon"><i class="bi bi-person-fill"></i></div>
+      <div>
+        <h5>Account</h5>
+        <p>Your profile details</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <div class="info-row">
+        <span class="info-label"><i class="bi bi-person me-2"></i>Username</span>
+        <span class="info-value">{{ current_user.username }}</span>
+      </div>
+      <div class="info-row" style="align-items:flex-start;flex-direction:column;gap:8px;">
+        <div class="d-flex justify-content-between w-100 align-items-center">
+          <span class="info-label"><i class="bi bi-envelope me-2"></i>Email</span>
+          <span class="info-value">{{ current_user.email }}</span>
+        </div>
+        <div class="w-100">
+          <button class="btn btn-outline-primary btn-sm rounded-pill px-3" type="button" data-bs-toggle="collapse"
+            data-bs-target="#changeEmailForm" style="font-size:0.78rem;">
+            <i class="bi bi-pencil me-1"></i>Change Email
+          </button>
+          <div class="collapse mt-2" id="changeEmailForm">
+            <form method="POST" action="{{ url_for('change_email') }}">
+              <div class="row g-2">
+                <div class="col-12 col-sm-6">
+                  <input type="email" name="new_email" id="s_new_email" class="form-control form-control-sm"
+                    placeholder="New email address" required>
+                  <div class="field-feedback" id="fb_s_new_email"></div>
+                </div>
+                <div class="col-12 col-sm-6">
+                  <input type="password" name="current_password" id="s_email_pwd" class="form-control form-control-sm"
+                    placeholder="Current password" required>
+                  <div class="field-feedback" id="fb_s_email_pwd"></div>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 mt-2">
+                <i class="bi bi-check-circle me-1"></i>Update Email
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Appearance ── -->
+  <div class="settings-card reveal reveal-delay-1">
+    <div class="settings-card-header">
+      <div class="card-icon"><i class="bi bi-palette-fill"></i></div>
+      <div>
+        <h5>Appearance</h5>
+        <p>Customise how Money Mate looks</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <div class="info-row">
+        <span class="info-label"><i class="bi bi-moon-stars me-2"></i>Dark Mode</span>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" id="darkModeToggle" role="switch"
+            style="width:2.5em;height:1.4em;cursor:pointer;" onchange="toggleDark()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Notifications ── -->
+  <div class="settings-card reveal reveal-delay-2">
+    <div class="settings-card-header">
+      <div class="card-icon"><i class="bi bi-bell-fill"></i></div>
+      <div>
+        <h5>Notifications</h5>
+        <p>Control in-app pop alerts and warnings</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <div class="info-row">
+        <div>
+          <span class="info-label"><i class="bi bi-bell me-2"></i>Pop Notifications</span>
+          <div class="text-muted mt-1" style="font-size:0.78rem;">Show pop-up alerts for warnings, budget tips, and
+            subscription reminders.</div>
+        </div>
+        <form method="POST" action="{{ url_for('toggle_notifications') }}" class="ms-3 flex-shrink-0">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch"
+              style="width:2.5em;height:1.4em;cursor:pointer;" onchange="this.form.submit()" {% if
+              current_user.notifications_enabled %}checked{% endif %}>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Security ── -->
+  <div class="settings-card reveal reveal-delay-3">
+    <div class="settings-card-header">
+      <div class="card-icon"><i class="bi bi-shield-lock-fill"></i></div>
+      <div>
+        <h5>Security</h5>
+        <p>Password and MPIN management</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <p class="settings-section-label"><i class="bi bi-lock me-1"></i>Change Password</p>
+      <form method="POST" action="{{ url_for('change_password') }}" class="mb-1" id="changePasswordForm">
+        <div class="row g-2">
+          <div class="col-12 col-sm-4">
+            <input type="password" name="current_password" id="s_cur_pwd" class="form-control form-control-sm"
+              placeholder="Current password" required>
+            <div class="field-feedback" id="fb_s_cur_pwd"></div>
+          </div>
+          <div class="col-12 col-sm-4">
+            <input type="password" name="new_password" id="s_new_pwd" class="form-control form-control-sm"
+              placeholder="New password" required minlength="4">
+            <div class="field-feedback" id="fb_s_new_pwd"></div>
+          </div>
+          <div class="col-12 col-sm-4">
+            <input type="password" name="confirm_password" id="s_confirm_pwd" class="form-control form-control-sm"
+              placeholder="Confirm new password" required minlength="4">
+            <div class="field-feedback" id="fb_s_confirm_pwd"></div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 mt-2">
+          <i class="bi bi-check-circle me-1"></i>Update Password
+        </button>
+      </form>
+
+      <hr class="settings-divider">
+
+      <p class="settings-section-label">
+        <i class="bi bi-key me-1"></i>MPIN — Quick Login
+        <span class="ms-2">
+          {% if current_user.mpin %}
+          <span class="mpin-status-badge mpin-enabled"><i class="bi bi-check-circle-fill"></i> Enabled</span>
+          {% else %}
+          <span class="mpin-status-badge mpin-disabled"><i class="bi bi-x-circle-fill"></i> Not Set</span>
+          {% endif %}
+        </span>
+      </p>
+      <p class="text-muted mb-3" style="font-size:0.82rem;">A 6-digit PIN for faster, secure access without typing your
+        full password.</p>
+      {% if not current_user.mpin %}
+      <a href="{{ url_for('setup_mpin') }}" class="btn btn-primary rounded-pill px-4 btn-sm">
+        <i class="bi bi-plus-circle me-2"></i>Set Up MPIN
+      </a>
+      {% else %}
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('change_mpin') }}" class="btn btn-outline-primary rounded-pill px-4 btn-sm">
+          <i class="bi bi-pencil me-2"></i>Change MPIN
+        </a>
+        <button class="btn btn-outline-danger rounded-pill px-4 btn-sm" data-bs-toggle="modal"
+          data-bs-target="#removeMpinModal">
+          <i class="bi bi-trash me-2"></i>Remove MPIN
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Goals Budget ── -->
+  <div class="settings-card reveal reveal-delay-1">
+    <div class="settings-card-header">
+      <div class="card-icon"><i class="bi bi-bullseye"></i></div>
+      <div>
+        <h5>Goals Budget</h5>
+        <p>Allocate a slice of your Wants budget to savings goals</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <p class="text-muted mb-3" style="font-size:0.85rem;">
+        Your <strong>Savings (20%)</strong> stays intact. Set what percentage of your
+        <strong>Wants (30%)</strong> budget is ring-fenced for your savings goals each month.
+        The remainder of Wants is yours for discretionary spending.
+      </p>
+      <form method="POST" action="{{ url_for('update_goals_wants_pct') }}" id="goalsWantsPctForm">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="fw-semibold" style="font-size:0.9rem;">
+              <i class="bi bi-sliders me-1"></i>Goals slice of Wants budget
+            </label>
+            <span class="fw-bold" style="color:#f39c12;font-size:1.1rem;" id="gwPctDisplay">
+              {{ current_user.goals_wants_pct | int }}%
+            </span>
+          </div>
+          <input type="range" class="form-range" id="goals_wants_pct_slider" min="0" max="100" step="5"
+            value="{{ current_user.goals_wants_pct | int }}" oninput="document.getElementById('goals_wants_pct_val').value=this.value;
+                          document.getElementById('gwPctDisplay').textContent=this.value+'%';">
+          <input type="hidden" name="goals_wants_pct" id="goals_wants_pct_val"
+            value="{{ current_user.goals_wants_pct | int }}">
+          <div class="d-flex justify-content-between" style="font-size:0.75rem;color:var(--text-muted);">
+            <span>0% (all Wants free)</span>
+            <span>100% (all Wants to goals)</span>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">
+          <i class="bi bi-check-circle me-1"></i>Save
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Email Import ── -->
+  <div class="settings-card reveal">
+    <div class="settings-card-header">
+      <div class="card-icon"><i class="bi bi-envelope-arrow-down"></i></div>
+      <div>
+        <h5>Email Import</h5>
+        <p>Auto-detect transactions from bank &amp; payment emails</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <p class="text-muted mb-3" style="font-size:0.85rem;">Connect your inbox to automatically scan for transaction
+        emails and import them as expenses or income.</p>
+      <a href="{{ url_for('email_import') }}" class="btn btn-primary rounded-pill px-4 btn-sm">
+        <i class="bi bi-envelope-arrow-down me-2"></i>Open Email Import
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Invite a Friend ── -->
+  <div class="settings-card reveal reveal-delay-1">
+    <div class="settings-card-header">
+      <div class="card-icon"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <h5>Invite a Friend</h5>
+        <p>Share Money Mate with someone you care about</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <p class="text-muted mb-3" style="font-size:0.85rem;">Know someone who could use a smarter way to track their
+        money? Share the link!</p>
+      <div class="invite-box mb-3">
+        <span class="invite-url" id="inviteUrl">{{ request.host_url }}</span>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="copyInviteLink()"
+          style="font-size:0.78rem;white-space:nowrap;">
+          <i class="bi bi-clipboard me-1"></i><span id="copyBtnText">Copy Link</span>
+        </button>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="https://wa.me/?text=Track%20your%20money%20smartly%20with%20Money%20Mate%3A%20{{ request.host_url | urlencode }}"
+          target="_blank" class="btn btn-sm btn-success rounded-pill px-3" style="font-size:0.78rem;">
+          <i class="bi bi-whatsapp me-1"></i>Share on WhatsApp
+        </a>
+        <a href="mailto:?subject=Try%20Money%20Mate&body=Hey!%20I%27ve%20been%20using%20Money%20Mate%20to%20track%20my%20finances.%20Check%20it%20out%3A%20{{ request.host_url | urlencode }}"
+          class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size:0.78rem;">
+          <i class="bi bi-envelope me-1"></i>Share via Email
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Request Account Info ── -->
+  <div class="settings-card reveal reveal-delay-2">
+    <div class="settings-card-header">
+      <div class="card-icon"><i class="bi bi-file-earmark-person-fill"></i></div>
+      <div>
+        <h5>Request Account Info</h5>
+        <p>Download a full copy of your data</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <p class="text-muted mb-3" style="font-size:0.85rem;">Get a complete summary of everything stored in your Money
+        Mate account — income records, expenses, goals, and more.</p>
+      <a href="{{ url_for('request_account_info') }}" class="btn btn-outline-primary rounded-pill px-4 btn-sm">
+        <i class="bi bi-download me-2"></i>View My Account Data
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Reset Account ── -->
+  <div class="settings-card reveal" style="border-color:rgba(243,156,18,0.35);">
+    <div class="settings-card-header" style="background:linear-gradient(135deg,#e67e22,#f39c12);">
+      <div class="card-icon"><i class="bi bi-arrow-counterclockwise"></i></div>
+      <div>
+        <h5>Reset Account</h5>
+        <p>Clear all financial data while keeping your account</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <p class="text-muted mb-3" style="font-size:0.85rem;">This will delete all your income records, expenses, and
+        savings goals. <strong>Your account (username, email, password) will be kept.</strong> This cannot be undone.
+      </p>
+      <button class="btn btn-warning btn-sm rounded-pill px-4" data-bs-toggle="modal"
+        data-bs-target="#resetAccountModal">
+        <i class="bi bi-arrow-counterclockwise me-2"></i>Reset My Data
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Account Actions (delete) ── -->
+  <div class="settings-card reveal reveal-delay-1" style="border-color:rgba(255, 146, 77,0.25);">
+    <div class="settings-card-header" style="background:linear-gradient(135deg,#c0392b,#e74c3c);">
+      <div class="card-icon"><i class="bi bi-person-x-fill"></i></div>
+      <div>
+        <h5>Delete Account</h5>
+        <p>Permanently remove your account and all data</p>
+      </div>
+    </div>
+    <div class="settings-card-body">
+      <p class="text-muted mb-3" style="font-size:0.85rem;">This will permanently delete your account, all expenses,
+        income records, and goals. <strong>This cannot be undone.</strong></p>
+      <button class="btn btn-danger btn-sm rounded-pill px-4" data-bs-toggle="modal"
+        data-bs-target="#deleteAccountModal">
+        <i class="bi bi-trash me-2"></i>Delete My Account
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Log Out ── -->
+  <div class="text-center pb-3">
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary rounded-pill px-5">
+      <i class="bi bi-box-arrow-right me-2"></i>Log Out
+    </a>
+  </div>
+
+</div>
+
+<!-- Remove MPIN Modal -->
+{% if current_user.mpin %}
+<div class="modal fade" id="removeMpinModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:20px;border:none;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold"><i class="bi bi-shield-x text-danger me-2"></i>Remove MPIN</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('remove_mpin') }}">
+        <div class="modal-body pt-2">
+          <p class="text-muted" style="font-size:0.9rem;">Enter your account password to confirm removing the MPIN.</p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Account Password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input type="password" name="current_password" class="form-control" placeholder="Enter your password"
+                required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger rounded-pill px-4">
+            <i class="bi bi-trash me-2"></i>Remove MPIN
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Reset Account Modal -->
+<div class="modal fade" id="resetAccountModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:20px;border:none;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold"><i class="bi bi-arrow-counterclockwise text-warning me-2"></i>Reset Account Data
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('reset_account') }}">
+        <div class="modal-body pt-2">
+          <div class="alert alert-warning py-2 px-3" style="font-size:0.85rem;border-radius:12px;">
+            <strong>This will delete:</strong> all income records, all expenses, and all savings goals.<br>
+            <strong>Your account will be kept</strong> — you stay logged in and can start fresh.
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Confirm your password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input type="password" name="current_password" class="form-control" placeholder="Enter your password"
+                required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning rounded-pill px-4">
+            <i class="bi bi-arrow-counterclockwise me-2"></i>Reset My Data
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:20px;border:none;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Delete Account
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('delete_account') }}">
+        <div class="modal-body pt-2">
+          <div class="alert alert-danger py-2 px-3" style="font-size:0.85rem;border-radius:12px;">
+            <strong>Warning:</strong> All your data will be permanently deleted. This action cannot be undone.
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Confirm your password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input type="password" name="current_password" class="form-control" placeholder="Enter your password"
+                required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger rounded-pill px-4">
+            <i class="bi bi-trash me-2"></i>Delete Forever
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var toggle = document.getElementById('darkModeToggle');
+    if (toggle) toggle.checked = localStorage.getItem('darkMode') === 'true';
+  })();
+
+  function copyInviteLink() {
+    var url = document.getElementById('inviteUrl').textContent.trim();
+    navigator.clipboard.writeText(url).then(function () {
+      var btn = document.getElementById('copyBtnText');
+      btn.textContent = 'Copied!';
+      setTimeout(function () {btn.textContent = 'Copy Link';}, 2000);
+    });
+  }
+
+  (function () {
+    function setFb(fbId, inputEl, ok, msg) {
+      var fb = document.getElementById(fbId);
+      if (!fb || !inputEl) return;
+      fb.innerHTML = (ok ? '<i class="bi bi-check-circle-fill"></i> ' : '<i class="bi bi-x-circle-fill"></i> ') + msg;
+      fb.className = 'field-feedback show ' + (ok ? 'valid' : 'invalid');
+      inputEl.classList.toggle('is-valid-animated', ok);
+      inputEl.classList.toggle('is-invalid-animated', !ok);
+    }
+
+    var curPwd = document.getElementById('s_cur_pwd');
+    if (curPwd) {
+      curPwd.addEventListener('blur', function () {
+        if (!this.value) return;
+        var ok = this.value.length >= 4;
+        setFb('fb_s_cur_pwd', this, ok, ok ? 'Current password entered.' : 'Too short.');
+      });
+    }
+    var newPwd = document.getElementById('s_new_pwd');
+    if (newPwd) {
+      newPwd.addEventListener('blur', function () {
+        if (!this.value) return;
+        var ok = this.value.length >= 6;
+        setFb('fb_s_new_pwd', this, ok, ok ? 'Strong enough.' : 'At least 6 characters required.');
+      });
+    }
+    var confirmPwd = document.getElementById('s_confirm_pwd');
+    if (confirmPwd) {
+      confirmPwd.addEventListener('blur', function () {
+        if (!this.value) return;
+        var newPwdEl = document.getElementById('s_new_pwd');
+        var ok = newPwdEl && this.value === newPwdEl.value && this.value.length >= 4;
+        setFb('fb_s_confirm_pwd', this, ok, ok ? 'Passwords match.' : 'Passwords do not match.');
+      });
+    }
+    var newEmail = document.getElementById('s_new_email');
+    if (newEmail) {
+      newEmail.addEventListener('blur', function () {
+        if (!this.value) return;
+        var ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value);
+        setFb('fb_s_new_email', this, ok, ok ? 'Valid email address.' : 'Enter a valid email.');
+      });
+    }
+    var emailPwd = document.getElementById('s_email_pwd');
+    if (emailPwd) {
+      emailPwd.addEventListener('blur', function () {
+        if (!this.value) return;
+        var ok = this.value.length >= 4;
+        setFb('fb_s_email_pwd', this, ok, ok ? 'Password entered.' : 'Too short.');
+      });
+    }
+  })();
+</script>
+
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 reveal">
+  <div>
+    <h4 class="fw-bold mb-0" style="color:var(--text-primary);">
+      <i class="bi bi-arrow-repeat me-2" style="color:var(--brand-primary);"></i>Detected Subscriptions
+    </h4>
+    <p class="text-muted mb-0" style="font-size:0.88rem;">Recurring payments found in the last 3 months.</p>
+  </div>
+</div>
+
+{% if subscriptions %}
+<div class="card mb-4">
+  <div class="card-header"><i class="bi bi-list-ul"></i> All Recurring Payments</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Service / Category</th>
+            <th>Description</th>
+            <th>Avg. Monthly</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Status</th>
+            <th>Last Seen</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sub in subscriptions %}
+          {% set is_expired = sub.sub_end_date and sub.sub_end_date < now %} {% set days_left=((sub.sub_end_date -
+            now).days) if sub.sub_end_date else None %} {% set expiring_soon=days_left is not none and days_left>= 0 and
+            days_left <= 7 %} <tr
+              class="{% if is_expired %}table-danger{% elif expiring_soon %}table-warning{% endif %}">
+              <td>
+                {% if 'netflix' in sub.category.lower() or 'streaming' in sub.category.lower() %}📺
+                {% elif 'spotify' in sub.category.lower() or 'music' in sub.category.lower() %}🎵
+                {% elif 'gym' in sub.category.lower() or 'fitness' in sub.category.lower() %}💪
+                {% elif 'insurance' in sub.category.lower() %}🛡️
+                {% elif 'rent' in sub.category.lower() %}🏠
+                {% elif 'internet' in sub.category.lower() or 'phone' in sub.category.lower() %}📡
+                {% else %}🔄{% endif %}
+                <strong>{{ sub.category }}</strong>
+              </td>
+              <td style="font-size:0.88rem;color:var(--text-muted);">{{ sub.description or '—' }}</td>
+              <td><span class="badge bg-primary">₹{{ "%.0f"|format(sub.avg_amount) }}</span></td>
+              <td style="font-size:0.85rem;">
+                {% if sub.sub_start_date %}
+                {{ sub.sub_start_date.strftime('%d %b %Y') }}
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td style="font-size:0.85rem;">
+                {% if sub.sub_end_date %}
+                {{ sub.sub_end_date.strftime('%d %b %Y') }}
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if is_expired %}
+                <span class="badge bg-danger">Expired</span>
+                {% elif expiring_soon %}
+                <span class="badge bg-warning text-dark">Expires in {{ days_left }}d</span>
+                {% elif sub.sub_end_date %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">No end date</span>
+                {% endif %}
+              </td>
+              <td style="font-size:0.85rem;">{{ sub.last_date.strftime('%d %b %Y') }}</td>
+              <td>
+                {% if sub.expense_id %}
+                <div class="d-flex gap-1 flex-wrap">
+                  <a href="{{ url_for('edit_expense', id=sub.expense_id) }}" class="btn btn-primary btn-sm"
+                    title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  {% if is_expired %}
+                  <a href="{{ url_for('remove_expired_subscription', id=sub.expense_id) }}"
+                    class="btn btn-danger btn-sm" title="Remove expired"
+                    onclick="return confirm('Remove this expired subscription?')">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                  {% endif %}
+                </div>
+                {% endif %}
+              </td>
+              </tr>
+              {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 reveal reveal-delay-2">
+  <div class="col-md-5">
+    <div class="stat-card stat-expense" style="height:100%;">
+      <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+      <div class="stat-label">Total Monthly Cost</div>
+      <div class="stat-value">₹{{ "%.0f"|format(total_cost) }}</div>
+      <div class="stat-sub">Across {{ subscriptions|length }} subscription{% if subscriptions|length != 1 %}s{% endif %}
+      </div>
+      <div class="stat-bg-icon"><i class="bi bi-arrow-repeat"></i></div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="alert alert-info h-100 d-flex align-items-start gap-3 mb-0" style="border-radius:var(--radius-md);">
+      <i class="bi bi-lightbulb-fill" style="font-size:1.5rem;flex-shrink:0;margin-top:2px;"></i>
+      <div>
+        <strong>Money-saving tip</strong>
+        <p class="mb-0 mt-1" style="font-size:0.9rem;">Review these recurring expenses regularly. Canceling even one
+          unused subscription can save you
+          <strong>₹{{ "%.0f"|format(total_cost) }}</strong> per month — that's <strong>₹{{ "%.0f"|format(total_cost *
+            12) }}</strong> a year!
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="card reveal">
+  <div class="card-body text-center py-5">
+    <div style="font-size:4rem;margin-bottom:1rem;opacity:0.4;">🔄</div>
+    <h4 class="mb-2">No Subscriptions Detected</h4>
+    <p class="text-muted mb-4">No recurring payments were found in the last 3 months. Mark expenses as subscriptions
+      when adding them.</p>
+    <a href="{{ url_for('add_expense') }}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-2"></i>Add an Expense
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

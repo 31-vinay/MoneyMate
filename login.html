@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .auth-wrap {
+    min-height: 75vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 440px;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 128, 128, 0.2);
+    border: none;
+  }
+
+  .auth-header {
+    background: linear-gradient(135deg, #008080 0%, #006666 100%);
+    color: white;
+    padding: 2.5rem 2rem 2rem;
+    text-align: center;
+  }
+
+  .auth-header .auth-icon {
+    width: 68px;
+    height: 68px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+  }
+
+  .auth-header h3 {
+    font-weight: 700;
+    margin: 0 0 4px;
+    font-size: 1.5rem;
+  }
+
+  .auth-header p {
+    opacity: 0.8;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .auth-body {
+    padding: 2rem;
+    background: var(--bg-card);
+  }
+
+  .dark-mode .auth-body {
+    background: #1a1d2e;
+  }
+
+  .btn-auth {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #008080, #006666);
+    color: white;
+    border: none;
+    transition: all 0.28s;
+    box-shadow: 0 6px 20px rgba(0, 128, 128, 0.3);
+  }
+
+  .btn-auth:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0, 128, 128, 0.4);
+    color: white;
+  }
+
+  .auth-divider {
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-top: 1.25rem;
+  }
+
+  .auth-divider a {
+    color: #008080;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .auth-divider a:hover {
+    text-decoration: underline;
+  }
+
+  /* MPIN numpad */
+  .pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .pin-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 128, 128, 0.4);
+    background: transparent;
+    transition: all 0.2s;
+  }
+
+  .pin-dot.filled {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+    transform: scale(1.15);
+  }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .numpad-btn {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-card);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .numpad-btn:hover {
+    background: rgba(0, 128, 128, 0.1);
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+  }
+
+  .numpad-btn:active {
+    transform: scale(0.9);
+  }
+
+  .numpad-btn.backspace {
+    font-size: 1rem;
+  }
+
+  .numpad-btn.empty-btn {
+    visibility: hidden;
+  }
+
+  .mpin-user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 128, 128, 0.07);
+    border-radius: 50px;
+    padding: 8px 14px 8px 10px;
+    margin-bottom: 22px;
+    cursor: pointer;
+    border: 1.5px solid rgba(0, 128, 128, 0.15);
+    transition: border 0.2s;
+  }
+
+  .mpin-user-chip:hover {
+    border-color: var(--brand-primary);
+  }
+
+  .mpin-user-chip .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--gradient-brand);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .mpin-user-chip .uname {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+  }
+
+  .mpin-user-chip .edit-hint {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+  }
+
+  .use-pwd-link {
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .use-pwd-link a {
+    font-size: 0.84rem;
+    color: var(--brand-primary);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .use-pwd-link a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<div class="auth-wrap">
+  <div class="auth-card reveal">
+    <div class="auth-header">
+      <div class="auth-icon" id="headerIcon"><i class="bi bi-person-fill"></i></div>
+      <h3 id="headerTitle">Welcome Back</h3>
+      <p id="headerSub">Sign in to your Money Mate account</p>
+    </div>
+    <div class="auth-body">
+
+      <!-- ── STEP 1: Email ── -->
+      <div id="step-email" {% if show_mpin is defined and show_mpin %}style="display:none" {% endif %}>
+        <form id="emailForm" onsubmit="checkUser(event)">
+          {{ form.hidden_tag() }}
+          <div class="mb-4">
+            <label class="form-label">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+              <input type="email" id="emailInput" class="form-control" placeholder="Enter your email"
+                value="{{ prefill_email or '' }}" autocomplete="email">
+            </div>
+            <div class="field-feedback" id="fb_login_email"></div>
+            <small id="emailError" class="text-danger" style="display:none;"></small>
+          </div>
+          <button type="submit" class="btn-auth" id="continueBtn">
+            <span id="continueBtnText"><i class="bi bi-arrow-right-circle me-2"></i>Continue</span>
+            <span id="continueBtnSpinner" style="display:none">
+              <span class="spinner-border spinner-border-sm me-2"></span>Checking…
+            </span>
+          </button>
+        </form>
+        <div class="auth-divider">
+          Don't have an account? <a href="{{ url_for('register') }}">Create one free</a>
+        </div>
+      </div>
+
+      <!-- ── STEP 2A: MPIN numpad ── -->
+      <div id="step-mpin" style="display:none">
+        <div class="mpin-user-chip" onclick="goBackToEmail()">
+          <div class="avatar" id="mpinAvatar">?</div>
+          <div>
+            <div class="uname" id="mpinUsernameLabel"></div>
+            <div class="edit-hint"><i class="bi bi-pencil" style="font-size:0.7rem;"></i> Change account</div>
+          </div>
+        </div>
+        <p style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">Enter your
+          6-digit MPIN</p>
+        <div class="pin-dots">
+          {% for i in range(6) %}<div class="pin-dot" id="login-dot-{{ i }}"></div>{% endfor %}
+        </div>
+        <form id="mpinForm" method="POST" action="{{ url_for('login') }}">
+          {{ form.hidden_tag() }}
+          <input type="hidden" name="email" id="mpinEmail">
+          <input type="hidden" name="mpin_input" id="mpinValue">
+        </form>
+        <div class="numpad">
+          {% for n in [1,2,3,4,5,6,7,8,9] %}
+          <button type="button" class="numpad-btn" onclick="loginPadPress({{ n }})">{{ n }}</button>
+          {% endfor %}
+          <button type="button" class="numpad-btn empty-btn">-</button>
+          <button type="button" class="numpad-btn" onclick="loginPadPress(0)">0</button>
+          <button type="button" class="numpad-btn backspace" onclick="loginPadBack()"><i
+              class="bi bi-backspace"></i></button>
+        </div>
+        <div class="use-pwd-link">
+          <a onclick="switchToPassword()">Use password instead</a>
+        </div>
+      </div>
+
+      <!-- ── STEP 2B: Password ── -->
+      <div id="step-password" style="display:none">
+        <div class="mpin-user-chip" onclick="goBackToEmail()">
+          <div class="avatar" id="pwdAvatar">?</div>
+          <div>
+            <div class="uname" id="pwdUsernameLabel"></div>
+            <div class="edit-hint"><i class="bi bi-pencil" style="font-size:0.7rem;"></i> Change account</div>
+          </div>
+        </div>
+        <form id="pwdForm" method="POST" action="{{ url_for('login') }}">
+          {{ form.hidden_tag() }}
+          <input type="hidden" name="email" id="pwdEmail">
+          <div class="mb-4">
+            <label class="form-label">Password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input type="password" name="password" id="pwdInput" class="form-control"
+                placeholder="Enter your password" autocomplete="current-password">
+            </div>
+            <div class="field-feedback" id="fb_login_pwd"></div>
+          </div>
+          <button type="submit" class="btn-auth">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let loginPin = '';
+  let currentEmail = '';
+  let currentUsername = '';
+
+  const LS_EMAIL_KEY = 'mm_saved_email';
+
+  // ── Auto-advance if we have a saved email ──────────────────────
+  (function () {
+    {% if show_mpin is defined and show_mpin %}
+    /* server-side prefill after a failed MPIN attempt */
+    const e = "{{ prefill_email or '' }}";
+    if (e) {localStorage.setItem(LS_EMAIL_KEY, e); showMpinStep(e, e);}
+    {% elif prefill_email is defined and prefill_email %}
+    const e = "{{ prefill_email or '' }}";
+    if (e) {localStorage.setItem(LS_EMAIL_KEY, e); showPasswordStep(e, e);}
+    {% else %}
+    /* check localStorage */
+    const saved = localStorage.getItem(LS_EMAIL_KEY);
+    if (saved) {
+      document.getElementById('emailInput').value = saved;
+      autoAdvance(saved);
+    }
+    {% endif %}
+  })();
+
+  function autoAdvance(email) {
+    document.getElementById('continueBtnText').style.display = 'none';
+    document.getElementById('continueBtnSpinner').style.display = 'inline';
+    document.getElementById('continueBtn').disabled = true;
+    fetch('/check-mpin-status?email=' + encodeURIComponent(email))
+      .then(r => r.json())
+      .then(data => {
+        if (!data.exists) {
+          /* saved email no longer valid — clear it and show email step */
+          localStorage.removeItem(LS_EMAIL_KEY);
+          document.getElementById('continueBtnText').style.display = 'inline';
+          document.getElementById('continueBtnSpinner').style.display = 'none';
+          document.getElementById('continueBtn').disabled = false;
+        } else if (data.has_mpin) {
+          showMpinStep(email, data.username);
+        } else {
+          showPasswordStep(email, data.username);
+        }
+      })
+      .catch(() => {
+        document.getElementById('continueBtnText').style.display = 'inline';
+        document.getElementById('continueBtnSpinner').style.display = 'none';
+        document.getElementById('continueBtn').disabled = false;
+      });
+  }
+
+  function checkUser(e) {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value.trim();
+    if (!email) {showEmailError('Please enter your email address.'); return;}
+    document.getElementById('continueBtnText').style.display = 'none';
+    document.getElementById('continueBtnSpinner').style.display = 'inline';
+    document.getElementById('continueBtn').disabled = true;
+
+    fetch('/check-mpin-status?email=' + encodeURIComponent(email))
+      .then(r => r.json())
+      .then(data => {
+        if (!data.exists) {
+          showEmailError('No account found with that email.');
+          document.getElementById('continueBtnText').style.display = 'inline';
+          document.getElementById('continueBtnSpinner').style.display = 'none';
+          document.getElementById('continueBtn').disabled = false;
+        } else if (data.has_mpin) {
+          localStorage.setItem(LS_EMAIL_KEY, email);
+          showMpinStep(email, data.username);
+        } else {
+          localStorage.setItem(LS_EMAIL_KEY, email);
+          showPasswordStep(email, data.username);
+        }
+      });
+  }
+
+  function showMpinStep(email, username) {
+    currentEmail = email;
+    currentUsername = username || email;
+    document.getElementById('step-email').style.display = 'none';
+    document.getElementById('step-mpin').style.display = 'block';
+    const initial = (username || email).charAt(0).toUpperCase();
+    document.getElementById('mpinAvatar').textContent = initial;
+    document.getElementById('mpinUsernameLabel').textContent = username || email;
+    document.getElementById('mpinEmail').value = email;
+    document.getElementById('headerIcon').innerHTML = '<i class="bi bi-shield-lock-fill"></i>';
+    document.getElementById('headerTitle').textContent = 'Enter MPIN';
+    document.getElementById('headerSub').textContent = 'Your 6-digit quick-login PIN';
+    loginPin = ''; updateLoginDots();
+  }
+
+  function showPasswordStep(email, username) {
+    currentEmail = email;
+    currentUsername = username || email;
+    document.getElementById('step-email').style.display = 'none';
+    document.getElementById('step-mpin').style.display = 'none';
+    document.getElementById('step-password').style.display = 'block';
+    const initial = (username || email).charAt(0).toUpperCase();
+    document.getElementById('pwdAvatar').textContent = initial;
+    document.getElementById('pwdUsernameLabel').textContent = username || email;
+    document.getElementById('pwdEmail').value = email;
+    document.getElementById('headerIcon').innerHTML = '<i class="bi bi-lock-fill"></i>';
+    document.getElementById('headerTitle').textContent = 'Enter Password';
+    document.getElementById('headerSub').textContent = 'Secure access to your account';
+    setTimeout(() => {const p = document.getElementById('pwdInput'); if (p) p.focus();}, 100);
+  }
+
+  function switchToPassword() {
+    showPasswordStep(currentEmail, currentUsername);
+  }
+
+  function goBackToEmail() {
+    localStorage.removeItem(LS_EMAIL_KEY);
+    document.getElementById('emailInput').value = '';
+    document.getElementById('step-mpin').style.display = 'none';
+    document.getElementById('step-password').style.display = 'none';
+    document.getElementById('step-email').style.display = 'block';
+    document.getElementById('headerIcon').innerHTML = '<i class="bi bi-person-fill"></i>';
+    document.getElementById('headerTitle').textContent = 'Welcome Back';
+    document.getElementById('headerSub').textContent = 'Sign in to your Money Mate account';
+    document.getElementById('continueBtnText').style.display = 'inline';
+    document.getElementById('continueBtnSpinner').style.display = 'none';
+    document.getElementById('continueBtn').disabled = false;
+  }
+
+  function updateLoginDots() {
+    for (let i = 0; i < 6; i++) {
+      const d = document.getElementById('login-dot-' + i);
+      if (d) d.classList.toggle('filled', i < loginPin.length);
+    }
+  }
+
+  function loginPadPress(digit) {
+    if (loginPin.length >= 6) return;
+    loginPin += String(digit);
+    updateLoginDots();
+    if (loginPin.length === 6) {
+      setTimeout(() => {
+        document.getElementById('mpinValue').value = loginPin;
+        document.getElementById('mpinForm').submit();
+      }, 180);
+    }
+  }
+
+  function loginPadBack() {
+    loginPin = loginPin.slice(0, -1);
+    updateLoginDots();
+  }
+
+  function showEmailError(msg) {
+    const el = document.getElementById('emailError');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3500);
+  }
+
+  (function () {
+    function setFb(fbId, inputEl, ok, msg) {
+      var fb = document.getElementById(fbId);
+      if (!fb || !inputEl) return;
+      fb.innerHTML = (ok ? '<i class="bi bi-check-circle-fill"></i> ' : '<i class="bi bi-x-circle-fill"></i> ') + msg;
+      fb.className = 'field-feedback show ' + (ok ? 'valid' : 'invalid');
+      inputEl.classList.toggle('is-valid-animated', ok);
+      inputEl.classList.toggle('is-invalid-animated', !ok);
+    }
+    var emailEl = document.getElementById('emailInput');
+    if (emailEl) {
+      emailEl.addEventListener('blur', function () {
+        if (!this.value) return;
+        var ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value);
+        setFb('fb_login_email', this, ok, ok ? 'Email looks good.' : 'Enter a valid email address.');
+      });
+    }
+    var pwdEl = document.getElementById('pwdInput');
+    if (pwdEl) {
+      pwdEl.addEventListener('blur', function () {
+        if (!this.value) return;
+        var ok = this.value.length >= 4;
+        setFb('fb_login_pwd', this, ok, ok ? 'Password entered.' : 'Password is too short.');
+      });
+    }
+  })();
+</script>
+
+{% endblock %}

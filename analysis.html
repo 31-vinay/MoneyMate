@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-3 reveal flex-wrap gap-3"
+  style="position:relative;z-index:200;">
+  <div>
+    <h4 class="mb-0 fw-bold" style="color:var(--text-primary);">
+      <i class="bi bi-bar-chart-line me-2" style="color:var(--brand-primary);"></i>Analysis
+    </h4>
+    <p class="text-muted mb-0" style="font-size:0.88rem;">
+      Showing data for <strong>{{ range_label }}</strong> · Generated {{ now.strftime('%d %b %Y %I:%M %p') }}
+    </p>
+  </div>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+    <i class="bi bi-speedometer2 me-1"></i>Dashboard
+  </a>
+</div>
+
+<!-- ── Date-range filter bar ── -->
+<div class="card mb-4 reveal" style="border:1px solid var(--border-color);">
+  <div class="card-body py-2 px-3">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="fw-semibold me-1" style="font-size:0.82rem;color:var(--text-muted);white-space:nowrap;">
+        <i class="bi bi-calendar-range me-1"></i>Range:
+      </span>
+      {% set presets = [
+      ('this_month', 'This Month'),
+      ('prev_month', 'Prev Month'),
+      ('2months', 'Past 2 Months'),
+      ('3months', 'Past 3 Months'),
+      ('6months', 'Past 6 Months'),
+      ('all_time', 'All Time'),
+      ] %}
+      {% for key, label in presets %}
+      <a href="{{ url_for('analysis', dr=key) }}"
+        class="btn btn-sm rounded-pill {% if dr == key %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+        style="font-size:0.76rem;padding:3px 12px;">
+        {{ label }}
+      </a>
+      {% endfor %}
+
+      <!-- Custom date range -->
+      <form method="get" action="{{ url_for('analysis') }}" class="d-flex align-items-center gap-1 ms-auto flex-wrap"
+        id="custom-range-form">
+        <input type="hidden" name="dr" value="custom">
+        <input type="date" name="from" value="{{ custom_from }}" class="form-control form-control-sm"
+          style="width:130px;font-size:0.76rem;" placeholder="From" id="custom-from">
+        <span style="font-size:0.8rem;color:var(--text-muted);">–</span>
+        <input type="date" name="to" value="{{ custom_to }}" class="form-control form-control-sm"
+          style="width:130px;font-size:0.76rem;" placeholder="To" id="custom-to">
+        <button type="submit"
+          class="btn btn-sm rounded-pill {% if dr == 'custom' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+          style="font-size:0.76rem;padding:3px 12px;">
+          <i class="bi bi-check2"></i> Apply
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if not has_data %}
+<div class="text-center py-5 reveal">
+  <div style="font-size:4rem;opacity:0.25;margin-bottom:1rem;"><i class="bi bi-bar-chart-line"></i></div>
+  <h5 class="fw-bold mb-2">No data yet</h5>
+  <p class="text-muted mb-4" style="max-width:400px;margin:0 auto 1.5rem;">
+    Add some income and expenses first, then come back here to see your charts and insights.
+  </p>
+  <div class="d-flex justify-content-center gap-3 flex-wrap">
+    <a href="{{ url_for('add_income') }}" class="btn btn-success rounded-pill px-4">
+      <i class="bi bi-plus me-1"></i>Add Income
+    </a>
+    <a href="{{ url_for('add_expense') }}" class="btn btn-primary rounded-pill px-4">
+      <i class="bi bi-plus me-1"></i>Add Expense
+    </a>
+  </div>
+</div>
+{% else %}
+
+<!-- Summary row: skeleton -->
+<div class="row g-3 mb-4" id="analysis-skeletons" aria-hidden="true">
+  {% for _ in range(4) %}
+  <div class="col-6 col-md-3">
+    <div class="skeleton-card">
+      <div class="skeleton skeleton-circle" style="width:40px;height:40px;margin-bottom:0.75rem;"></div>
+      <div class="skeleton skeleton-line short"></div>
+      <div class="skeleton skeleton-number" style="height:28px;width:55%;"></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Summary row -->
+<div class="row g-3 mb-4 fade-in fade-in-delay-1" id="analysis-stats" style="display:none!important;">
+  <div class="col-6 col-md-3 reveal reveal-delay-1">
+    <div class="stat-card stat-income h-100">
+      <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
+      <div class="stat-label">Income</div>
+      <div class="stat-value" data-countup="{{ " %.0f"|format(total_income) }}">₹0</div>
+      <div class="stat-sub">{{ range_label }}</div>
+      <div class="stat-bg-icon"><i class="bi bi-cash-stack"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 reveal reveal-delay-2">
+    <div class="stat-card stat-expense h-100">
+      <div class="stat-icon"><i class="bi bi-credit-card"></i></div>
+      <div class="stat-label">Total Spent</div>
+      <div class="stat-value" data-countup="{{ " %.0f"|format(total_spent) }}">₹0</div>
+      <div class="stat-sub">{{ range_label }}</div>
+      <div class="stat-bg-icon"><i class="bi bi-wallet2"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 reveal reveal-delay-3">
+    <div class="stat-card stat-balance h-100">
+      <div class="stat-icon"><i class="bi bi-house-heart-fill"></i></div>
+      <div class="stat-label">Needs (Essential)</div>
+      <div class="stat-value" data-countup="{{ " %.0f"|format(essential) }}">₹0</div>
+      <div class="stat-sub">Essential expenses</div>
+      <div class="stat-bg-icon"><i class="bi bi-house-heart"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 reveal reveal-delay-4">
+    <div class="stat-card stat-burn h-100">
+      <div class="stat-icon"><i class="bi bi-fire"></i></div>
+      <div class="stat-label">Burn Rate</div>
+      <div class="stat-value" data-countup="{{ " %.0f"|format(burn_rate) }}">₹0</div>
+      <div class="stat-sub">Per day average</div>
+      <div class="stat-bg-icon"><i class="bi bi-graph-up-arrow"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 1: Expense Distribution + Category Breakdown -->
+<div class="row g-3 mb-4 reveal">
+  <div class="col-md-5">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-pie-chart me-2"></i>Expense Distribution
+        <span class="badge bg-secondary ms-2" style="font-size:0.72rem;">This month</span>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center" style="min-height:300px;">
+        <div class="chart-wrap" id="wrap-dist">
+          <div class="chart-spinner"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Loading
+            chart…</div>
+          <img class="lazy-chart d-none" data-src="{{ url_for('analysis_chart_dist') }}" alt="Expense Distribution"
+            style="max-width:100%;max-height:320px;object-fit:contain;">
+          <div class="chart-no-data d-none text-center text-muted py-4">
+            <i class="bi bi-pie-chart" style="font-size:3rem;opacity:0.25;"></i>
+            <p class="mt-2 mb-0">No expense data for this month.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-bar-chart-horizontal me-2"></i>Category Breakdown
+        <span class="badge bg-secondary ms-2" style="font-size:0.72rem;">This month · Top 8</span>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center" style="min-height:300px;">
+        <div class="chart-wrap" id="wrap-cats">
+          <div class="chart-spinner"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Loading
+            chart…</div>
+          <img class="lazy-chart d-none" data-src="{{ url_for('analysis_chart_cats') }}" alt="Category Breakdown"
+            style="max-width:100%;max-height:380px;object-fit:contain;">
+          <div class="chart-no-data d-none text-center text-muted py-4">
+            <i class="bi bi-bar-chart-horizontal" style="font-size:3rem;opacity:0.25;"></i>
+            <p class="mt-2 mb-0">No expense categories to display.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: Monthly Spending Trend -->
+<div class="card mb-4 reveal reveal-delay-1">
+  <div class="card-header">
+    <i class="bi bi-graph-up me-2"></i>Monthly Spending Trend
+    <span class="badge bg-secondary ms-2" style="font-size:0.72rem;">Last 6 months</span>
+  </div>
+  <div class="card-body d-flex align-items-center justify-content-center" style="min-height:280px;">
+    <div class="chart-wrap" id="wrap-trend">
+      <div class="chart-spinner"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Loading chart…
+      </div>
+      <img class="lazy-chart d-none" data-src="{{ url_for('analysis_chart_trend') }}" alt="Monthly Spending Trend"
+        style="max-width:100%;max-height:320px;object-fit:contain;">
+      <div class="chart-no-data d-none text-center text-muted py-4">
+        <i class="bi bi-graph-up" style="font-size:3rem;opacity:0.25;"></i>
+        <p class="mt-2 mb-0">Not enough data for a trend yet.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 3: Income vs Expense -->
+<div class="card mb-4 reveal reveal-delay-2">
+  <div class="card-header">
+    <i class="bi bi-bar-chart-line me-2"></i>Income vs Expense
+    <span class="badge bg-secondary ms-2" style="font-size:0.72rem;">Last 6 months</span>
+  </div>
+  <div class="card-body d-flex align-items-center justify-content-center" style="min-height:280px;">
+    <div class="chart-wrap" id="wrap-inc-exp">
+      <div class="chart-spinner"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Loading chart…
+      </div>
+      <img class="lazy-chart d-none" data-src="{{ url_for('analysis_chart_inc_exp') }}" alt="Income vs Expense"
+        style="max-width:100%;max-height:320px;object-fit:contain;">
+      <div class="chart-no-data d-none text-center text-muted py-4">
+        <i class="bi bi-bar-chart-line" style="font-size:3rem;opacity:0.25;"></i>
+        <p class="mt-2 mb-0">No income or expense data to compare.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category table -->
+{% if categories %}
+<div class="card mb-4 reveal reveal-delay-3">
+  <div class="card-header"><i class="bi bi-table me-2"></i>Category Summary — {{ range_label }}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th class="text-end">Amount</th>
+            <th style="width:40%">Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set total_cat = categories.values()|sum %}
+          {% for cat, amt in categories.items()|sort(attribute='1', reverse=True) %}
+          <tr>
+            <td>
+              {% if 'rent' in cat.lower() or 'mortgage' in cat.lower() %}🏠
+              {% elif 'food' in cat.lower() or 'groceries' in cat.lower() %}🍔
+              {% elif 'transport' in cat.lower() or 'fuel' in cat.lower() %}🚗
+              {% elif 'electricity' in cat.lower() or 'water' in cat.lower() %}⚡
+              {% elif 'health' in cat.lower() or 'medical' in cat.lower() %}🏥
+              {% elif 'education' in cat.lower() %}📚
+              {% elif 'insurance' in cat.lower() %}🛡️
+              {% elif 'entertainment' in cat.lower() %}🎮
+              {% elif 'travel' in cat.lower() %}✈️
+              {% else %}📌{% endif %}
+              {{ cat }}
+            </td>
+            <td class="text-end fw-semibold">₹{{ "%.0f"|format(amt) }}</td>
+            <td>
+              {% set pct = (amt / total_cat * 100) if total_cat else 0 %}
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:8px;">
+                  <div class="progress-bar" style="width:{{ pct }}%;background:var(--brand-primary);"></div>
+                </div>
+                <span style="font-size:0.8rem;color:var(--text-muted);min-width:38px;">{{ "%.1f"|format(pct) }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function countUp(el, target, duration) {
+      if (reducedMotion) {el.textContent = '₹' + Math.round(target).toLocaleString('en-IN'); return;}
+      var startTime = null;
+      function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        var progress = Math.min((timestamp - startTime) / duration, 1);
+        var ease = 1 - Math.pow(1 - progress, 3);
+        el.textContent = '₹' + Math.round(ease * target).toLocaleString('en-IN');
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function loadChart(img) {
+      var wrap = img.closest('.chart-wrap');
+      var spinner = wrap.querySelector('.chart-spinner');
+      var noData = wrap.querySelector('.chart-no-data');
+      img.onload = function () {
+        spinner.style.display = 'none';
+        img.classList.remove('d-none');
+      };
+      img.onerror = function () {
+        spinner.style.display = 'none';
+        noData.classList.remove('d-none');
+      };
+      img.src = img.getAttribute('data-src');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var skeletons = document.getElementById('analysis-skeletons');
+      var stats = document.getElementById('analysis-stats');
+      if (skeletons && stats) {
+        var countUpDone = false;
+        function runCountUp() {
+          if (countUpDone) return;
+          countUpDone = true;
+          stats.querySelectorAll('[data-countup]').forEach(function (el) {
+            countUp(el, parseFloat(el.getAttribute('data-countup')) || 0, 900);
+          });
+        }
+        setTimeout(function () {
+          skeletons.style.display = 'none';
+          stats.style.removeProperty('display');
+          var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {runCountUp(); io.disconnect();}
+            });
+          }, {threshold: 0.1});
+          io.observe(stats);
+          setTimeout(runCountUp, 700);
+        }, 300);
+      }
+
+      document.querySelectorAll('.lazy-chart').forEach(loadChart);
+    });
+  })();
+</script>
+{% endblock %}

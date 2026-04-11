@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .tutorial-hero {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+  }
+
+  .tutorial-hero h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #008080, #006666);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+
+  .tutorial-hero p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .step-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border-color);
+    border-radius: 20px;
+    padding: 2rem 1.75rem;
+    transition: all 0.3s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .step-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 128, 128, 0.15);
+    border-color: var(--brand-primary);
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #008080, #006666);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+  }
+
+  .step-icon.green {
+    background: rgba(0, 184, 148, 0.12);
+    color: #00b894;
+  }
+
+  .step-icon.purple {
+    background: rgba(0, 128, 128, 0.12);
+    color: #008080;
+  }
+
+  .step-icon.blue {
+    background: rgba(9, 132, 227, 0.12);
+    color: #0984e3;
+  }
+
+  .step-icon.orange {
+    background: rgba(243, 156, 18, 0.12);
+    color: #f39c12;
+  }
+
+  .step-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .step-desc {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .step-tips {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .step-tips li {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    padding: 0.2rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .step-tips li::before {
+    content: '✓';
+    color: #00b894;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .btn-try {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 50px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border: none;
+    text-decoration: none;
+    transition: all 0.22s;
+  }
+
+  .btn-try.green {
+    background: rgba(0, 184, 148, 0.12);
+    color: #00b894;
+  }
+
+  .btn-try.purple {
+    background: rgba(0, 128, 128, 0.12);
+    color: #008080;
+  }
+
+  .btn-try.blue {
+    background: rgba(9, 132, 227, 0.12);
+    color: #0984e3;
+  }
+
+  .btn-try.orange {
+    background: rgba(243, 156, 18, 0.12);
+    color: #e67e22;
+  }
+
+  .btn-try:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+  }
+
+  .tutorial-footer {
+    text-align: center;
+    padding: 2.5rem 1rem;
+  }
+</style>
+
+<div class="tutorial-hero reveal">
+  <div class="mb-3" style="font-size:3rem;">👋</div>
+  <h2>Welcome to Money Mate!</h2>
+  <p>Here's a quick overview of everything you can do. It only takes a minute.</p>
+</div>
+
+<div class="row g-4 reveal reveal-delay-1">
+
+  <!-- Step 1: Income -->
+  <div class="col-md-6 col-lg-3">
+    <div class="step-card">
+      <div class="d-flex align-items-center gap-2">
+        <div class="step-number">1</div>
+        <div class="step-icon green"><i class="bi bi-cash-coin"></i></div>
+      </div>
+      <div>
+        <div class="step-title">Add Your Income</div>
+        <p class="step-desc">Log every rupee coming in — salary, freelance, business, allowances, and more.</p>
+        <ul class="step-tips">
+          <li>Multiple income sources supported</li>
+          <li>See month-by-month income trends</li>
+          <li>All entries listed below the form</li>
+        </ul>
+      </div>
+      <a href="{{ url_for('add_income') }}" class="btn-try green">
+        <i class="bi bi-plus-circle"></i> Add Income
+      </a>
+    </div>
+  </div>
+
+  <!-- Step 2: Expenses -->
+  <div class="col-md-6 col-lg-3">
+    <div class="step-card">
+      <div class="d-flex align-items-center gap-2">
+        <div class="step-number">2</div>
+        <div class="step-icon purple"><i class="bi bi-wallet2"></i></div>
+      </div>
+      <div>
+        <div class="step-title">Track Expenses</div>
+        <p class="step-desc">Log every spend with smart categories. Money Mate auto-tags each expense as a Need or Want.
+        </p>
+        <ul class="step-tips">
+          <li>Hierarchical category system</li>
+          <li>Mark subscriptions with one click</li>
+          <li>Needs vs. wants breakdown</li>
+        </ul>
+      </div>
+      <a href="{{ url_for('add_expense') }}" class="btn-try purple">
+        <i class="bi bi-plus-circle"></i> Add Expense
+      </a>
+    </div>
+  </div>
+
+  <!-- Step 3: Goals -->
+  <div class="col-md-6 col-lg-3">
+    <div class="step-card">
+      <div class="d-flex align-items-center gap-2">
+        <div class="step-number">3</div>
+        <div class="step-icon blue"><i class="bi bi-bullseye"></i></div>
+      </div>
+      <div>
+        <div class="step-title">Set Savings Goals</div>
+        <p class="step-desc">Planning a vacation, an emergency fund, or a big purchase? Set a target and track your
+          progress.</p>
+        <ul class="step-tips">
+          <li>Estimated completion timeline</li>
+          <li>Progress bars and milestones</li>
+          <li>Spending-cut suggestions</li>
+        </ul>
+      </div>
+      <a href="{{ url_for('add_goal') }}" class="btn-try blue">
+        <i class="bi bi-plus-circle"></i> Create Goal
+      </a>
+    </div>
+  </div>
+
+  <!-- Step 4: Insights -->
+  <div class="col-md-6 col-lg-3">
+    <div class="step-card">
+      <div class="d-flex align-items-center gap-2">
+        <div class="step-number">4</div>
+        <div class="step-icon orange"><i class="bi bi-bar-chart-line"></i></div>
+      </div>
+      <div>
+        <div class="step-title">View Insights</div>
+        <p class="step-desc">Charts, trend analysis, and automatic subscription detection — all in one place.</p>
+        <ul class="step-tips">
+          <li>Income vs. expense charts</li>
+          <li>Auto-detect recurring payments</li>
+          <li>Monthly trend analysis</li>
+        </ul>
+      </div>
+      <a href="{{ url_for('analysis') }}" class="btn-try orange">
+        <i class="bi bi-graph-up"></i> View Analysis
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dashboard tip -->
+<div class="card reveal reveal-delay-2 mt-4"
+  style="border:1.5px solid rgba(0, 128, 128,0.2);background:rgba(0, 128, 128,0.04);">
+  <div class="card-body d-flex align-items-start gap-3 p-4">
+    <div style="font-size:2rem;flex-shrink:0;">💡</div>
+    <div>
+      <strong style="color:var(--text-primary);">Pro tip — your Dashboard</strong>
+      <p class="mb-0 text-muted" style="font-size:0.9rem;margin-top:0.3rem;">
+        Your dashboard shows a live snapshot of this month's income, spending, net balance, and savings rate.
+        The more data you add, the smarter it gets. Start by logging a few income and expense entries!
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="tutorial-footer reveal reveal-delay-2">
+  <a href="{{ url_for('complete_tutorial') }}" class="btn btn-success btn-lg px-5">
+    <i class="bi bi-check-circle me-2"></i>Got it — take me to my Dashboard
+  </a>
+  <div class="mt-3">
+    <a href="{{ url_for('complete_tutorial') }}" class="text-muted" style="font-size:0.85rem;text-decoration:none;">
+      Skip tutorial
+    </a>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,1103 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .ei-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ── Tab switcher ── */
+  .import-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .import-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .import-tab-btn.active {
+    background: var(--gradient-brand);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(0,128,128,0.28);
+  }
+
+  .import-tab-btn:not(.active):hover {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+  }
+
+  /* ── Cards ── */
+  .ei-card {
+    border-radius: 20px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-card);
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 128, 128, 0.07);
+  }
+
+  .ei-card-header {
+    background: var(--gradient-brand);
+    color: #fff;
+    padding: 18px 26px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .ei-card-header .card-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  .ei-card-header h5 {
+    font-weight: 700;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .ei-card-header p {
+    margin: 0;
+    opacity: .82;
+    font-size: 0.8rem;
+  }
+
+  .ei-card-body {
+    padding: 22px 26px;
+  }
+
+  /* ── Steps ── */
+  .step-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gradient-brand);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-label {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+  }
+
+  /* ── Security note ── */
+  .security-note {
+    background: rgba(0, 128, 128, 0.07);
+    border-left: 4px solid var(--brand-primary);
+    border-radius: 0 12px 12px 0;
+    padding: 12px 16px;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+
+  .security-note strong { color: var(--text-primary); }
+
+  /* ── Provider chips ── */
+  .provider-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .provider-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .18s;
+    user-select: none;
+  }
+
+  .provider-chip:hover {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+  }
+
+  .provider-chip.selected {
+    background: var(--gradient-brand);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 2px 10px rgba(0,128,128,0.22);
+  }
+
+  .provider-chip svg, .provider-chip .chip-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Credential fields ── */
+  .cred-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .cred-grid { grid-template-columns: 1fr; }
+  }
+
+  .cred-label {
+    font-size: 0.79rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .cred-label a {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--brand-primary);
+    text-decoration: none;
+    margin-left: 4px;
+  }
+
+  .cred-label a:hover { text-decoration: underline; }
+
+  /* ── Lookback select ── */
+  .lookback-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+
+  /* ── Table ── */
+  .txn-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.87rem;
+  }
+
+  .txn-table th {
+    background: rgba(0, 128, 128, 0.08);
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .txn-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+  }
+
+  .txn-table tr:last-child td { border-bottom: none; }
+  .txn-table tr:hover td { background: rgba(0, 128, 128, 0.03); }
+
+  .badge-income  { background: rgba(0, 184, 148, 0.12); color: #00b894; }
+  .badge-expense { background: rgba(255, 146, 77, 0.1);  color: #FF924D; }
+
+  .type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  .select-all-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+  }
+
+  .empty-state i {
+    font-size: 2.5rem;
+    opacity: 0.3;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  /* ── Upload zone (bank statement) ── */
+  .upload-zone {
+    border: 2.5px dashed var(--border-color);
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .25s;
+    background: rgba(0, 128, 128, 0.03);
+  }
+
+  .upload-zone:hover,
+  .upload-zone.drag-over {
+    border-color: var(--brand-primary);
+    background: rgba(0, 128, 128, 0.08);
+  }
+
+  .upload-zone i {
+    font-size: 2.8rem;
+    color: var(--brand-primary);
+    opacity: .7;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .upload-zone .upload-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+  }
+
+  .upload-zone .upload-sub {
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+  }
+
+  .upload-zone .file-chosen {
+    font-size: 0.88rem;
+    color: var(--brand-primary);
+    font-weight: 600;
+    margin-top: 10px;
+  }
+
+  .bank-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .bank-chip {
+    background: rgba(0, 128, 128, 0.07);
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  /* ── Verified badge ── */
+  .verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,184,148,0.12);
+    color: #00b894;
+    border-radius: 50px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+</style>
+
+<div class="ei-wrap">
+
+  <div class="page-header mb-4">
+    <h2 class="page-title"><i class="bi bi-cloud-arrow-down me-2"></i>Import Transactions</h2>
+    <p class="text-muted mb-0">Auto-detect and import transactions from your email inbox or bank statement file.</p>
+  </div>
+
+  <!-- Tab switcher -->
+  <div class="import-tabs">
+    <button class="import-tab-btn active" id="tab-email" onclick="switchTab('email')">
+      <i class="bi bi-envelope-fill"></i> Email Import
+    </button>
+    <button class="import-tab-btn" id="tab-bank" onclick="switchTab('bank')">
+      <i class="bi bi-file-earmark-text"></i> Bank Statement
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       EMAIL IMPORT PANEL
+       ══════════════════════════════════════════════════════════ -->
+  <div id="panel-email">
+
+    <!-- Step 1: Connect -->
+    <div class="ei-card" id="card-connect">
+      <div class="ei-card-header">
+        <div class="card-icon"><i class="bi bi-plug-fill"></i></div>
+        <div>
+          <h5>Step 1 — Connect Your Email</h5>
+          <p>Your credentials are only used for this session and are never stored in the database.</p>
+        </div>
+      </div>
+      <div class="ei-card-body">
+
+        {% if imap_connected %}
+        <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+          <span class="verified-badge"><i class="bi bi-check-circle-fill"></i> Connected</span>
+          <span class="text-muted" style="font-size:0.87rem;">Your email account is linked for this session.</span>
+          <button class="btn btn-outline-danger btn-sm rounded-pill px-3 ms-auto" id="btnDisconnect">
+            <i class="bi bi-plug me-1"></i>Disconnect
+          </button>
+        </div>
+        {% else %}
+
+        <div class="security-note">
+          <strong><i class="bi bi-shield-lock me-1"></i>Security note:</strong>
+          Your password is sent securely over SSL and only stored in your browser session — it is erased when you log out.
+          For Gmail / Outlook we strongly recommend using an <strong>App Password</strong> instead of your main password.
+        </div>
+
+        <div class="step-row">
+          <div class="step-badge">1</div>
+          <div class="step-label">Choose your email provider</div>
+        </div>
+        <div class="provider-chips" id="providerPills">
+          <div class="provider-chip selected" data-host="imap.gmail.com" data-port="993" onclick="selectProvider(this)">
+            <i class="bi bi-google"></i> Gmail
+          </div>
+          <div class="provider-chip" data-host="imap-mail.outlook.com" data-port="993" onclick="selectProvider(this)">
+            <i class="bi bi-microsoft"></i> Outlook / Hotmail
+          </div>
+          <div class="provider-chip" data-host="imap.mail.yahoo.com" data-port="993" onclick="selectProvider(this)">
+            <span style="font-weight:900;">Y!</span> Yahoo Mail
+          </div>
+          <div class="provider-chip" data-host="imap.mail.me.com" data-port="993" onclick="selectProvider(this)">
+            <i class="bi bi-apple"></i> iCloud Mail
+          </div>
+          <div class="provider-chip" data-host="" data-port="993" onclick="selectProvider(this, true)">
+            <i class="bi bi-server"></i> Custom / Other
+          </div>
+        </div>
+
+        <div id="customHostRow" class="row g-2 mb-3 d-none">
+          <div class="col-sm-8">
+            <label class="cred-label">IMAP HOST</label>
+            <input type="text" class="form-control" id="imapHost" placeholder="e.g. imap.yourprovider.com" autocomplete="off">
+          </div>
+          <div class="col-sm-4">
+            <label class="cred-label">PORT</label>
+            <input type="number" class="form-control" id="imapPort" value="993" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="step-row mt-3">
+          <div class="step-badge">2</div>
+          <div class="step-label">Enter your credentials</div>
+        </div>
+        <div class="cred-grid">
+          <div>
+            <div class="cred-label"><i class="bi bi-envelope"></i> Email Address</div>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+              <input type="email" class="form-control" id="imapEmail" placeholder="you@gmail.com" autocomplete="username">
+            </div>
+          </div>
+          <div>
+            <div class="cred-label">
+              <i class="bi bi-key"></i> App Password
+              <a href="https://support.google.com/accounts/answer/185833" target="_blank" class="ms-1" style="font-size:0.75rem;">(WHAT'S THIS?)</a>
+            </div>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-key"></i></span>
+              <input type="password" class="form-control" id="imapPassword" placeholder="App password or email password" autocomplete="new-password">
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePwd()">
+                <i class="bi bi-eye" id="eyeIcon"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="connectError" class="alert alert-danger d-none mt-2"></div>
+
+        <button class="btn btn-primary rounded-pill px-4" id="btnConnect" onclick="connectEmail()">
+          <i class="bi bi-plug me-2"></i>Connect &amp; Verify
+          <span class="spinner-border spinner-border-sm ms-2 d-none" id="connectSpinner"></span>
+        </button>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- Step 2: Scan -->
+    <div class="ei-card {% if not imap_connected %}opacity-50{% endif %}" id="card-scan"
+         {% if not imap_connected %}style="pointer-events:none;"{% endif %}>
+      <div class="ei-card-header">
+        <div class="card-icon"><i class="bi bi-search-heart"></i></div>
+        <div>
+          <h5>Step 2 — Scan for Transactions</h5>
+          <p>Money Mate scans your inbox for bank alerts, receipts, and payment notifications.</p>
+        </div>
+      </div>
+      <div class="ei-card-body">
+        <div class="row g-3 align-items-end mb-4">
+          <div class="col-sm-4">
+            <label class="cred-label mb-1"><i class="bi bi-calendar3"></i> Look Back</label>
+            <select class="form-select" id="scanDays">
+              <option value="7">Last 7 days</option>
+              <option value="14">Last 14 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="60">Last 60 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </div>
+          <div class="col-sm-auto">
+            <button class="btn btn-primary rounded-pill px-4" id="btnScan" onclick="scanEmails()"
+                    {% if not imap_connected %}disabled{% endif %}>
+              <i class="bi bi-search me-2"></i>Scan Emails
+              <span class="spinner-border spinner-border-sm ms-2 d-none" id="scanSpinner"></span>
+            </button>
+          </div>
+        </div>
+        <div id="scanError" class="alert alert-danger d-none"></div>
+        <div id="scanInfo"  class="alert alert-info  d-none"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Review & Import (email) -->
+    <div class="ei-card d-none" id="card-email-results">
+      <div class="ei-card-header">
+        <div class="card-icon"><i class="bi bi-check2-square"></i></div>
+        <div>
+          <h5>Step 3 — Review &amp; Import</h5>
+          <p>Select the transactions you want to add to Money Mate, then click Import.</p>
+        </div>
+      </div>
+      <div class="ei-card-body">
+        <div class="select-all-row">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="eSelectAll" onchange="eToggleAll(this)">
+            <label class="form-check-label fw-semibold" for="eSelectAll">Select all</label>
+          </div>
+          <span class="text-muted small ms-auto" id="eSelectedCount">0 selected</span>
+          <button class="btn btn-success rounded-pill px-4" id="eBtnImport" onclick="emailImportSelected()" disabled>
+            <i class="bi bi-cloud-arrow-up me-2"></i>Import Selected
+            <span class="spinner-border spinner-border-sm ms-2 d-none" id="eImportSpinner"></span>
+          </button>
+        </div>
+        <div id="eImportSuccess" class="alert alert-success d-none"></div>
+        <div id="eImportError"   class="alert alert-danger  d-none"></div>
+        <div class="table-responsive">
+          <table class="txn-table" id="eTxnTable">
+            <thead>
+              <tr>
+                <th style="width:36px;"></th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="eTxnBody"></tbody>
+          </table>
+        </div>
+        <div id="eEmptyResults" class="empty-state d-none">
+          <i class="bi bi-inbox"></i>
+          <p class="fw-semibold">No financial emails found in this period.</p>
+          <p class="small">Try increasing the look-back window or check that your inbox has transaction emails.</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-email -->
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       BANK STATEMENT PANEL
+       ══════════════════════════════════════════════════════════ -->
+  <div id="panel-bank" class="d-none">
+
+    <!-- Step 1: Upload -->
+    <div class="ei-card">
+      <div class="ei-card-header">
+        <div class="card-icon"><i class="bi bi-file-earmark-arrow-up"></i></div>
+        <div>
+          <h5>Step 1 — Upload Your Bank Statement</h5>
+          <p>Supports PDF, Excel (.xlsx / .xls), and CSV — no login or API needed.</p>
+        </div>
+      </div>
+      <div class="ei-card-body">
+
+        <div class="security-note">
+          <strong><i class="bi bi-shield-lock me-1"></i>Your data stays private:</strong>
+          The file is processed on the server and immediately discarded — nothing is stored. Only the detected
+          transactions are shown to you.
+        </div>
+
+        <div class="step-row">
+          <div class="step-badge">1</div>
+          <div class="step-label">Choose your statement file or ZIP archive</div>
+        </div>
+
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('stmtFile').click()">
+          <i class="bi bi-cloud-arrow-up"></i>
+          <div class="upload-title">Click to browse or drag &amp; drop</div>
+          <div class="upload-sub">PDF, Excel (.xlsx / .xls), CSV — or a <strong>ZIP</strong> containing any of those · Max 20 MB</div>
+          <div class="file-chosen d-none" id="fileChosen"></div>
+        </div>
+        <input type="file" id="stmtFile" accept=".pdf,.xlsx,.xls,.csv,.zip" style="display:none"
+          onchange="onFileSelected()">
+
+        <div class="mt-3">
+          <p class="small fw-semibold mb-2" style="color:var(--text-secondary);">Works with statements from:</p>
+          <div class="bank-chips">
+            <span class="bank-chip">🏦 SBI</span>
+            <span class="bank-chip">🏦 HDFC</span>
+            <span class="bank-chip">🏦 ICICI</span>
+            <span class="bank-chip">🏦 Axis</span>
+            <span class="bank-chip">🏦 Kotak</span>
+            <span class="bank-chip">🏦 PNB</span>
+            <span class="bank-chip">🏦 Canara</span>
+            <span class="bank-chip">🏦 Yes Bank</span>
+            <span class="bank-chip">🏦 IndusInd</span>
+            <span class="bank-chip">+ any bank with standard columns</span>
+          </div>
+        </div>
+
+        <div class="mt-3 d-none" id="passwordRow">
+          <label class="form-label fw-semibold" style="font-size:0.88rem;" for="stmtPassword">
+            <i class="bi bi-lock me-1"></i>Statement Password
+          </label>
+          <div class="input-group" style="max-width:340px;">
+            <input type="password" class="form-control" id="stmtPassword" placeholder="e.g. DDMMYYYY or Customer ID"
+              style="border-radius:10px 0 0 10px;" autocomplete="off">
+            <button class="btn btn-outline-secondary" type="button" id="btnTogglePw" onclick="togglePwVisibility()"
+              style="border-radius:0 10px 10px 0;">
+              <i class="bi bi-eye" id="pwEyeIcon"></i>
+            </button>
+          </div>
+          <div class="form-text mt-1" style="font-size:0.77rem;color:var(--text-secondary);">
+            Your password is never stored — it's used only to decrypt this file locally on the server.
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button class="btn btn-primary rounded-pill px-4" id="btnParse" onclick="parseStatement()" disabled>
+            <i class="bi bi-cpu me-2"></i>Parse Statement
+            <span class="spinner-border spinner-border-sm ms-2 d-none" id="parseSpinner"></span>
+          </button>
+        </div>
+        <div id="parseError" class="alert alert-danger d-none mt-3"></div>
+
+      </div>
+    </div>
+
+    <!-- Step 2: Review & Import (bank) -->
+    <div class="ei-card d-none" id="card-bank-results">
+      <div class="ei-card-header">
+        <div class="card-icon"><i class="bi bi-check2-square"></i></div>
+        <div>
+          <h5>Step 2 — Review &amp; Import</h5>
+          <p>Select the transactions you want to add to Money Mate, then click Import.</p>
+        </div>
+      </div>
+      <div class="ei-card-body">
+        <div class="select-all-row">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="bSelectAll" onchange="toggleAll(this)">
+            <label class="form-check-label fw-semibold" for="bSelectAll">Select all</label>
+          </div>
+          <span class="text-muted small ms-auto" id="bSelectedCount">0 selected</span>
+          <button class="btn btn-success rounded-pill px-4" id="bBtnImport" onclick="importSelected()" disabled>
+            <i class="bi bi-cloud-arrow-up me-2"></i>Import Selected
+            <span class="spinner-border spinner-border-sm ms-2 d-none" id="bImportSpinner"></span>
+          </button>
+        </div>
+        <div id="bSourceNote" class="alert d-none mb-3"
+          style="background:rgba(0,128,128,0.07);border-left:4px solid var(--brand-primary);border-radius:0 12px 12px 0;color:var(--text-secondary);font-size:0.83rem;padding:10px 14px;">
+        </div>
+        <div id="bImportSuccess" class="alert alert-success d-none"></div>
+        <div id="bImportError"   class="alert alert-danger  d-none"></div>
+        <div class="table-responsive">
+          <table class="txn-table" id="bTxnTable">
+            <thead>
+              <tr>
+                <th style="width:36px;"></th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="bTxnBody"></tbody>
+          </table>
+        </div>
+        <div id="bEmptyResults" class="empty-state d-none">
+          <i class="bi bi-inbox"></i>
+          <p class="fw-semibold">No transactions detected in this file.</p>
+          <p class="small">Make sure your statement has standard column headers like Date, Description, Debit, and Credit.</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-bank -->
+
+</div><!-- /ei-wrap -->
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ═══════════════════════════════════════════════════════════
+  //  TAB SWITCHER
+  // ═══════════════════════════════════════════════════════════
+  function switchTab(tab) {
+    document.getElementById('panel-email').classList.toggle('d-none', tab !== 'email');
+    document.getElementById('panel-bank').classList.toggle('d-none',  tab !== 'bank');
+    document.getElementById('tab-email').classList.toggle('active', tab === 'email');
+    document.getElementById('tab-bank').classList.toggle('active',  tab === 'bank');
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  EMAIL IMPORT
+  // ═══════════════════════════════════════════════════════════
+  let selectedHost = 'imap.gmail.com';
+  let selectedPort = 993;
+  let emailTransactions = [];
+
+  function selectProvider(el, isCustom) {
+    document.querySelectorAll('.provider-chip').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedHost = el.dataset.host;
+    selectedPort = parseInt(el.dataset.port) || 993;
+    const customRow = document.getElementById('customHostRow');
+    if (isCustom) {
+      customRow.classList.remove('d-none');
+      selectedHost = '';
+    } else {
+      customRow.classList.add('d-none');
+    }
+  }
+
+  function togglePwd() {
+    const inp  = document.getElementById('imapPassword');
+    const icon = document.getElementById('eyeIcon');
+    if (inp.type === 'password') { inp.type = 'text';     icon.className = 'bi bi-eye-slash'; }
+    else                          { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+  }
+
+  async function connectEmail() {
+    const host  = document.getElementById('imapHost')?.value || selectedHost;
+    const port  = document.getElementById('imapPort')?.value || selectedPort;
+    const email = document.getElementById('imapEmail').value.trim();
+    const pass  = document.getElementById('imapPassword').value;
+    const errEl = document.getElementById('connectError');
+    const spin  = document.getElementById('connectSpinner');
+    const btn   = document.getElementById('btnConnect');
+
+    errEl.classList.add('d-none');
+    spin.classList.remove('d-none');
+    btn.disabled = true;
+
+    try {
+      const res  = await fetch('/email-import/connect', {
+        method:  'POST',
+        headers: {'Content-Type': 'application/json'},
+        body:    JSON.stringify({host, port, email, password: pass}),
+      });
+      const data = await res.json();
+      if (data.success) {
+        location.reload();
+      } else {
+        errEl.textContent = data.message;
+        errEl.classList.remove('d-none');
+      }
+    } catch (e) {
+      errEl.textContent = 'Network error — please try again.';
+      errEl.classList.remove('d-none');
+    }
+    spin.classList.add('d-none');
+    btn.disabled = false;
+  }
+
+  document.getElementById('btnDisconnect')?.addEventListener('click', async () => {
+    await fetch('/email-import/disconnect', {method: 'POST'});
+    location.reload();
+  });
+
+  async function scanEmails() {
+    const days  = document.getElementById('scanDays').value;
+    const errEl = document.getElementById('scanError');
+    const infoEl= document.getElementById('scanInfo');
+    const spin  = document.getElementById('scanSpinner');
+    const btn   = document.getElementById('btnScan');
+    const card  = document.getElementById('card-email-results');
+
+    errEl.classList.add('d-none');
+    infoEl.textContent = 'Scanning your inbox… this may take a moment.';
+    infoEl.classList.remove('d-none');
+    spin.classList.remove('d-none');
+    btn.disabled = true;
+    card.classList.add('d-none');
+
+    try {
+      const res  = await fetch('/email-import/scan', {
+        method:  'POST',
+        headers: {'Content-Type': 'application/json'},
+        body:    JSON.stringify({days: parseInt(days)}),
+      });
+      const data = await res.json();
+      infoEl.classList.add('d-none');
+
+      if (data.success) {
+        emailTransactions = data.transactions;
+        renderEmailResults(emailTransactions);
+        card.classList.remove('d-none');
+        card.scrollIntoView({behavior: 'smooth', block: 'start'});
+      } else {
+        errEl.textContent = data.message;
+        errEl.classList.remove('d-none');
+      }
+    } catch (e) {
+      infoEl.classList.add('d-none');
+      errEl.textContent = 'Network error during scan.';
+      errEl.classList.remove('d-none');
+    }
+    spin.classList.add('d-none');
+    btn.disabled = false;
+  }
+
+  function renderEmailResults(txns) {
+    const tbody    = document.getElementById('eTxnBody');
+    const empty    = document.getElementById('eEmptyResults');
+    const selCount = document.getElementById('eSelectedCount');
+    const btnImp   = document.getElementById('eBtnImport');
+    const selAll   = document.getElementById('eSelectAll');
+
+    tbody.innerHTML = '';
+    selCount.textContent = '0 selected';
+    btnImp.disabled = true;
+    selAll.checked  = false;
+
+    if (!txns.length) { empty.classList.remove('d-none'); return; }
+    empty.classList.add('d-none');
+
+    txns.forEach((t, i) => {
+      const isIncome  = t.type === 'income';
+      const typeBadge = isIncome
+        ? `<span class="type-badge badge-income"><i class="bi bi-arrow-down-circle-fill"></i> Income</span>`
+        : `<span class="type-badge badge-expense"><i class="bi bi-arrow-up-circle-fill"></i> Expense</span>`;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input class="form-check-input e-txn-check" type="checkbox" data-idx="${i}" onchange="eUpdateCount()"></td>
+        <td style="white-space:nowrap;">${t.date}</td>
+        <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(t.subject)}">${escHtml(t.description || t.subject)}</td>
+        <td>${typeBadge}</td>
+        <td class="fw-bold" style="white-space:nowrap;">₹${parseFloat(t.amount).toFixed(2)}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  function eToggleAll(cb) {
+    document.querySelectorAll('.e-txn-check').forEach(c => c.checked = cb.checked);
+    eUpdateCount();
+  }
+
+  function eUpdateCount() {
+    const checked = document.querySelectorAll('.e-txn-check:checked').length;
+    const all     = document.querySelectorAll('.e-txn-check').length;
+    document.getElementById('eSelectedCount').textContent = `${checked} selected`;
+    document.getElementById('eBtnImport').disabled = checked === 0;
+    document.getElementById('eSelectAll').checked  = checked === all && all > 0;
+  }
+
+  async function emailImportSelected() {
+    const successEl = document.getElementById('eImportSuccess');
+    const errEl     = document.getElementById('eImportError');
+    const spin      = document.getElementById('eImportSpinner');
+    const btn       = document.getElementById('eBtnImport');
+
+    successEl.classList.add('d-none');
+    errEl.classList.add('d-none');
+    spin.classList.remove('d-none');
+    btn.disabled = true;
+
+    const selected = [];
+    document.querySelectorAll('.e-txn-check:checked').forEach(cb => {
+      selected.push(emailTransactions[parseInt(cb.dataset.idx)]);
+    });
+
+    try {
+      const res  = await fetch('/email-import/import', {
+        method:  'POST',
+        headers: {'Content-Type': 'application/json'},
+        body:    JSON.stringify({transactions: selected}),
+      });
+      const data = await res.json();
+      if (data.success) {
+        successEl.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i><strong>${data.imported} transaction${data.imported !== 1 ? 's' : ''} imported!</strong> Go to <a href="/add_expense" class="alert-link">Expenses</a> to categorise them.`;
+        successEl.classList.remove('d-none');
+        document.querySelectorAll('.e-txn-check:checked').forEach(cb => cb.closest('tr').remove());
+        eUpdateCount();
+      } else {
+        errEl.textContent = data.message || 'Import failed.';
+        errEl.classList.remove('d-none');
+      }
+    } catch (e) {
+      errEl.textContent = 'Network error during import.';
+      errEl.classList.remove('d-none');
+    }
+    spin.classList.add('d-none');
+    btn.disabled = false;
+  }
+
+  ['imapEmail','imapPassword','imapHost','imapPort'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') connectEmail();
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  //  BANK STATEMENT
+  // ═══════════════════════════════════════════════════════════
+  let bankTransactions = [];
+
+  function onFileSelected() {
+    const f = document.getElementById('stmtFile').files[0];
+    const chosen = document.getElementById('fileChosen');
+    if (f) {
+      const ext = f.name.split('.').pop().toLowerCase();
+      const icon  = ext === 'zip' ? '🗜️' : '📄';
+      const label = ext === 'zip' ? ' (ZIP archive — statements will be extracted automatically)' : '';
+      chosen.innerHTML = icon + ' <strong>' + f.name + '</strong><span style="color:var(--text-muted);font-size:0.82rem;">' + label + '</span>';
+      chosen.classList.remove('d-none');
+      document.getElementById('btnParse').disabled = false;
+    }
+  }
+
+  const zone = document.getElementById('uploadZone');
+  if (zone) {
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) {
+        document.getElementById('stmtFile').files = e.dataTransfer.files;
+        onFileSelected();
+      }
+    });
+  }
+
+  function togglePwVisibility() {
+    const inp  = document.getElementById('stmtPassword');
+    const icon = document.getElementById('pwEyeIcon');
+    if (inp.type === 'password') { inp.type = 'text';     icon.className = 'bi bi-eye-slash'; }
+    else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+  }
+
+  async function parseStatement() {
+    const f = document.getElementById('stmtFile').files[0];
+    if (!f) return;
+    const errEl   = document.getElementById('parseError');
+    const spin    = document.getElementById('parseSpinner');
+    const btn     = document.getElementById('btnParse');
+    const card    = document.getElementById('card-bank-results');
+    const pwRow   = document.getElementById('passwordRow');
+    const pwInput = document.getElementById('stmtPassword');
+
+    errEl.classList.add('d-none');
+    spin.classList.remove('d-none');
+    btn.disabled = true;
+    card.classList.add('d-none');
+
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const pw = pwInput ? pwInput.value.trim() : '';
+      if (pw) fd.append('password', pw);
+
+      const res  = await fetch('/bank-statement/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (data.success) {
+        bankTransactions = data.transactions;
+        renderResults(bankTransactions);
+        card.classList.remove('d-none');
+        pwRow.classList.add('d-none');
+        const srcNote = document.getElementById('bSourceNote');
+        if (srcNote && data.source) {
+          srcNote.textContent = 'Parsed from: ' + data.source;
+          srcNote.classList.remove('d-none');
+        }
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        if (data.needs_password) {
+          pwRow.classList.remove('d-none');
+          pwInput.focus();
+          errEl.innerHTML = '<i class="bi bi-lock me-1"></i>' + data.message;
+        } else {
+          errEl.textContent = data.message;
+        }
+        errEl.classList.remove('d-none');
+      }
+    } catch (e) {
+      errEl.textContent = 'Network error — please try again.';
+      errEl.classList.remove('d-none');
+    }
+    spin.classList.add('d-none');
+    btn.disabled = false;
+  }
+
+  function renderResults(txns) {
+    const tbody    = document.getElementById('bTxnBody');
+    const empty    = document.getElementById('bEmptyResults');
+    const selCount = document.getElementById('bSelectedCount');
+    const btnImp   = document.getElementById('bBtnImport');
+    const selAll   = document.getElementById('bSelectAll');
+
+    tbody.innerHTML = '';
+    selCount.textContent = '0 selected';
+    btnImp.disabled = true;
+    selAll.checked  = false;
+
+    if (!txns.length) { empty.classList.remove('d-none'); return; }
+    empty.classList.add('d-none');
+
+    txns.forEach((t, i) => {
+      const isIncome  = t.type === 'income';
+      const typeBadge = isIncome
+        ? `<span class="type-badge badge-income"><i class="bi bi-arrow-down-circle-fill"></i> Income</span>`
+        : `<span class="type-badge badge-expense"><i class="bi bi-arrow-up-circle-fill"></i> Expense</span>`;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input class="form-check-input txn-check" type="checkbox" data-idx="${i}" onchange="updateCount()"></td>
+        <td style="white-space:nowrap;">${t.date}</td>
+        <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(t.description)}">${escHtml(t.description)}</td>
+        <td>${typeBadge}</td>
+        <td class="fw-bold" style="white-space:nowrap;">₹${parseFloat(t.amount).toFixed(2)}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  function toggleAll(cb) {
+    document.querySelectorAll('.txn-check').forEach(c => c.checked = cb.checked);
+    updateCount();
+  }
+
+  function updateCount() {
+    const checked = document.querySelectorAll('.txn-check:checked').length;
+    const all     = document.querySelectorAll('.txn-check').length;
+    document.getElementById('bSelectedCount').textContent = `${checked} selected`;
+    document.getElementById('bBtnImport').disabled = checked === 0;
+    document.getElementById('bSelectAll').checked  = checked === all && all > 0;
+  }
+
+  async function importSelected() {
+    const successEl = document.getElementById('bImportSuccess');
+    const errEl     = document.getElementById('bImportError');
+    const spin      = document.getElementById('bImportSpinner');
+    const btn       = document.getElementById('bBtnImport');
+
+    successEl.classList.add('d-none');
+    errEl.classList.add('d-none');
+    spin.classList.remove('d-none');
+    btn.disabled = true;
+
+    const selected = [];
+    document.querySelectorAll('.txn-check:checked').forEach(cb => {
+      selected.push(bankTransactions[parseInt(cb.dataset.idx)]);
+    });
+
+    try {
+      const res  = await fetch('/bank-statement/import', {
+        method:  'POST',
+        headers: {'Content-Type': 'application/json'},
+        body:    JSON.stringify({ transactions: selected }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const skippedNote = data.skipped > 0
+          ? ` (${data.skipped} duplicate${data.skipped !== 1 ? 's' : ''} skipped)` : '';
+        successEl.innerHTML = `
+          <i class="bi bi-check-circle-fill me-2"></i>
+          <strong>${data.imported} transaction${data.imported !== 1 ? 's' : ''} imported${skippedNote}!</strong><br>
+          <span style="font-size:0.9rem;">
+            View &amp; categorise them:
+            <a href="/add_income" class="alert-link">Income</a> ·
+            <a href="/add_expense" class="alert-link">Expenses</a><br>
+            <span class="text-muted" style="font-size:0.82rem;">
+              <i class="bi bi-info-circle me-1"></i>
+              The Dashboard shows <strong>current month only</strong>.
+              Transactions from past months appear on the Income/Expense pages and in Analysis charts.
+            </span>
+          </span>`;
+        successEl.classList.remove('d-none');
+        document.querySelectorAll('.txn-check:checked').forEach(cb => cb.closest('tr').remove());
+        updateCount();
+      } else {
+        errEl.textContent = data.message || 'Import failed.';
+        errEl.classList.remove('d-none');
+      }
+    } catch (e) {
+      errEl.textContent = 'Network error during import.';
+      errEl.classList.remove('d-none');
+    }
+    spin.classList.add('d-none');
+    btn.disabled = false;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  SHARED UTIL
+  // ═══════════════════════════════════════════════════════════
+  function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+
+</script>
+{% endblock %}

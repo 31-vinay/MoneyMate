@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .info-wrap {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .info-section-card {
+    border-radius: 20px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-card);
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0, 128, 128, 0.07);
+  }
+
+  .info-section-header {
+    background: var(--gradient-brand);
+    color: white;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .info-section-header .card-icon {
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .info-section-header h5 {
+    font-weight: 700;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .info-section-header p {
+    margin: 0;
+    opacity: 0.82;
+    font-size: 0.78rem;
+  }
+
+  .info-table {
+    font-size: 0.82rem;
+  }
+
+  .info-table th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+  }
+
+  .info-table td {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+  }
+
+  .empty-info {
+    padding: 20px 22px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+</style>
+
+<div class="info-wrap">
+  <div class="page-header mb-3 d-flex align-items-center gap-3">
+    <a href="{{ url_for('settings') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="page-title mb-0"><i class="bi bi-file-earmark-person me-2"></i>Your Account Data</h2>
+      <p class="text-muted mb-0" style="font-size:0.85rem;">A complete copy of the data stored in your Money Mate
+        account</p>
+    </div>
+  </div>
+
+  <!-- Profile -->
+  <div class="info-section-card">
+    <div class="info-section-header">
+      <div class="card-icon"><i class="bi bi-person-fill"></i></div>
+      <div>
+        <h5>Profile</h5>
+        <p>Your basic account details</p>
+      </div>
+    </div>
+    <div class="p-4">
+      <table class="table info-table mb-0">
+        <tr>
+          <th style="width:160px;">Username</th>
+          <td>{{ current_user.username }}</td>
+        </tr>
+        <tr>
+          <th>Email</th>
+          <td>{{ current_user.email }}</td>
+        </tr>
+        <tr>
+          <th>MPIN Set</th>
+          <td>{{ 'Yes' if current_user.mpin else 'No' }}</td>
+        </tr>
+        <tr>
+          <th>Notifications</th>
+          <td>{{ 'Enabled' if current_user.notifications_enabled else 'Disabled' }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Income -->
+  <div class="info-section-card">
+    <div class="info-section-header">
+      <div class="card-icon"><i class="bi bi-cash-coin"></i></div>
+      <div>
+        <h5>Income Records</h5>
+        <p>{{ incomes|length }} entries</p>
+      </div>
+    </div>
+    {% if incomes %}
+    <div class="table-responsive">
+      <table class="table info-table mb-0">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Recurring</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in incomes %}
+          <tr>
+            <td>{{ i.source }}</td>
+            <td>₹{{ "%.2f"|format(i.amount) }}</td>
+            <td>{{ i.date_received.strftime('%d %b %Y') }}</td>
+            <td>{{ 'Yes' if i.is_recurring else 'No' }}</td>
+            <td>{{ i.description or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-info">No income records found.</p>
+    {% endif %}
+  </div>
+
+  <!-- Expenses -->
+  <div class="info-section-card">
+    <div class="info-section-header">
+      <div class="card-icon"><i class="bi bi-wallet2"></i></div>
+      <div>
+        <h5>Expense Records</h5>
+        <p>{{ expenses|length }} entries</p>
+      </div>
+    </div>
+    {% if expenses %}
+    <div class="table-responsive">
+      <table class="table info-table mb-0">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in expenses %}
+          <tr>
+            <td>{{ e.category }}</td>
+            <td>₹{{ "%.2f"|format(e.amount) }}</td>
+            <td>{{ e.date.strftime('%d %b %Y') }}</td>
+            <td>
+              {% if e.is_subscription %}Subscription
+              {% elif e.is_essential %}Essential
+              {% else %}Regular{% endif %}
+            </td>
+            <td>{{ e.description or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-info">No expense records found.</p>
+    {% endif %}
+  </div>
+
+  <!-- Goals -->
+  <div class="info-section-card">
+    <div class="info-section-header">
+      <div class="card-icon"><i class="bi bi-bullseye"></i></div>
+      <div>
+        <h5>Savings Goals</h5>
+        <p>{{ goals|length }} goals</p>
+      </div>
+    </div>
+    {% if goals %}
+    <div class="table-responsive">
+      <table class="table info-table mb-0">
+        <thead>
+          <tr>
+            <th>Goal</th>
+            <th>Target</th>
+            <th>Saved</th>
+            <th>Progress</th>
+            <th>Target Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in goals %}
+          <tr>
+            <td>{{ g.name }}</td>
+            <td>₹{{ "%.2f"|format(g.target_amount) }}</td>
+            <td>₹{{ "%.2f"|format(g.saved_amount) }}</td>
+            <td>{{ "%.0f"|format(g.progress_percentage) }}%</td>
+            <td>{{ g.target_date.strftime('%d %b %Y') if g.target_date else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-info">No savings goals found.</p>
+    {% endif %}
+  </div>
+
+  <div class="text-center pb-4">
+    <p class="text-muted" style="font-size:0.8rem;">Data accurate as of {{ now.strftime('%d %b %Y, %I:%M %p') if now
+      else 'now' }}</p>
+    <button onclick="window.print()" class="btn btn-outline-primary rounded-pill px-4 btn-sm">
+      <i class="bi bi-printer me-2"></i>Print / Save as PDF
+    </button>
+  </div>
+
+</div>
+
+{% endblock %}

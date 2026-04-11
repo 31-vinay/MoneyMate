@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- Add / Edit Form -->
+  <div class="col-lg-5">
+    <div class="card reveal">
+      <div class="card-header">
+        <i class="bi bi-{% if edit %}pencil{% else %}cash-coin{% endif %}"></i>
+        {% if edit %}Edit Income{% else %}Add Income{% endif %}
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.source.label(class="form-label") }}
+            {{ form.source(class="form-select") }}
+          </div>
+          <div class="mb-3">
+            {{ form.amount.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+              {{ form.amount(class="form-control", placeholder="0.00", step="0.01", id="income_amount") }}
+            </div>
+            {% if form.amount.errors %}
+            {% for err in form.amount.errors %}<small class="text-danger d-block mt-1">{{ err }}</small>{% endfor %}
+            {% endif %}
+            <div class="field-feedback" id="fb_income_amount"></div>
+          </div>
+          <div class="mb-3">
+            {{ form.date_received.label(class="form-label") }}
+            {{ form.date_received(class="form-control") }}
+            <small class="text-muted">Leave blank to use today's date</small>
+          </div>
+          <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", placeholder="Optional note...") }}
+          </div>
+          <div class="mb-4">
+            <div class="form-check p-3 rounded"
+              style="background:rgba(0, 128, 128,0.05);border:1.5px solid var(--border-color);">
+              {{ form.is_recurring(class="form-check-input") }}
+              {{ form.is_recurring.label(class="form-check-label fw-semibold") }}
+              <div><small class="text-muted">Mark if this is a monthly salary or recurring income — it won't be cleared
+                  on monthly reset</small></div>
+            </div>
+          </div>
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-success btn-lg">
+              <i class="bi bi-check-circle me-2"></i>
+              {% if edit %}Update Income{% else %}Add Income{% endif %}
+            </button>
+            <a href="{{ url_for('add_income') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i>Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Income List -->
+  <div class="col-lg-7">
+    <!-- Day filter bar -->
+    <div class="card mb-2">
+      <div class="card-body py-2 px-3">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="fw-semibold" style="font-size:0.82rem;color:var(--text-muted);white-space:nowrap;">
+            <i class="bi bi-funnel me-1"></i>Filter:
+          </span>
+          {% set _fd = inc_filter_days | default(none) %}
+          {% for preset in [7, 14, 30, 60, 90] %}
+          <a href="{{ url_for('add_income', days=preset) }}"
+            class="btn btn-sm rounded-pill {% if _fd == preset %}btn-primary{% else %}btn-outline-secondary {% endif %}"
+            style="font-size:0.76rem;padding:2px 10px;">
+            {{ preset }}d
+          </a>
+          {% endfor %}
+          <a href="{{ url_for('add_income') }}"
+            class="btn btn-sm rounded-pill {% if not _fd %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+            style="font-size:0.76rem;padding:2px 10px;">
+            All
+          </a>
+          <form method="get" action="{{ url_for('add_income') }}" class="d-flex align-items-center gap-1 ms-auto">
+            <input type="number" name="days" min="1" max="365" value="{{ inc_filter_days or '' }}" placeholder="Days…"
+              class="form-control form-control-sm" style="width:80px;font-size:0.76rem;">
+            <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill"
+              style="font-size:0.76rem;padding:2px 10px;">Go</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-list-ul"></i> {{ inc_filter_label | default('All') }} Income
+        <span class="badge ms-auto" style="background:rgba(255,255,255,0.25);">{{ incomes|length }} entries</span>
+      </div>
+      <div class="card-body p-0">
+        {% if incomes %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" id="incomeTable">
+            <thead>
+              <tr>
+                <th style="width:36px;">
+                  <input type="checkbox" id="incSelectAll" class="form-check-input" title="Select all">
+                </th>
+                <th>Source</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inc in incomes %}
+              <tr>
+                <td>
+                  <input type="checkbox" class="form-check-input inc-row-check" value="{{ inc.id }}">
+                </td>
+                <td>
+                  <span class="d-flex align-items-center gap-2">
+                    {% if inc.source == 'salary' %}<i class="bi bi-briefcase-fill text-primary"></i>
+                    {% elif inc.source == 'business' %}<i class="bi bi-building text-success"></i>
+                    {% elif inc.source == 'freelance' %}<i class="bi bi-laptop text-info"></i>
+                    {% elif inc.source == 'allowance' %}<i class="bi bi-gift text-warning"></i>
+                    {% else %}<i class="bi bi-coin text-secondary"></i>{% endif %}
+                    {{ inc.source|capitalize }}
+                    {% if inc.is_recurring %}<span class="badge bg-info ms-1" title="Recurring">🔁</span>{% endif %}
+                  </span>
+                </td>
+                <td><strong class="text-success">₹{{ "%.2f"|format(inc.amount) }}</strong></td>
+                <td>
+                  <div style="font-size:0.83rem;color:var(--text-muted);">{{ inc.date_received.strftime('%d %b %Y') }}
+                  </div>
+                  {% if inc.created_at %}
+                  <div style="font-size:0.75rem;color:var(--text-muted);">
+                    Added: <span class="local-time"
+                      data-utc="{{ inc.created_at.strftime('%Y-%m-%dT%H:%M:%SZ') }}"></span>
+                  </div>
+                  {% endif %}
+                </td>
+                <td style="font-size:0.83rem;color:var(--text-muted);">{{ inc.description or '—' }}</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{{ url_for('edit_income', id=inc.id) }}" class="btn btn-primary btn-sm">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{{ url_for('delete_income', id=inc.id) }}" class="btn btn-danger btn-sm"
+                      onclick="return confirm('Delete this income entry?')">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-cash-coin" style="font-size:2.5rem;opacity:0.3;"></i>
+          <p class="mt-2 mb-0">No income entries yet. Add your first one!</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bulk Action Bar (Income) -->
+<div id="incBulkBar" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:1050;
+  background:var(--card-bg,#fff);border:1.5px solid var(--border-color);border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:12px 20px;min-width:340px;max-width:90vw;">
+  <div class="d-flex align-items-center gap-3 flex-wrap justify-content-center">
+    <span id="incBulkCount" class="fw-semibold" style="font-size:0.95rem;color:var(--text-muted);"></span>
+    <button type="button" class="btn btn-sm btn-primary rounded-pill" id="incBulkEditBtn">
+      <i class="bi bi-pencil-square me-1"></i>Edit Source
+    </button>
+    <button type="button" class="btn btn-sm btn-danger rounded-pill" id="incBulkDeleteBtn">
+      <i class="bi bi-trash me-1"></i>Delete Selected
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" id="incBulkClear">
+      <i class="bi bi-x me-1"></i>Clear
+    </button>
+  </div>
+</div>
+
+<!-- Hidden Bulk Delete Form (Income) -->
+<form id="incBulkDeleteForm" method="POST" action="{{ url_for('bulk_delete_income') }}" style="display:none;">
+  <input type="hidden" name="csrf_token" value="{{ form.csrf_token._value() }}">
+  <input type="hidden" name="days" value="{{ inc_filter_days or '' }}">
+  <div id="incDeleteIds"></div>
+</form>
+
+<!-- Bulk Edit Modal (Income) -->
+<div class="modal fade" id="incBulkEditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:1.5px solid var(--border-color);">
+      <div class="modal-header" style="border-bottom:1.5px solid var(--border-color);">
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Edit Source</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="incBulkEditForm" method="POST" action="{{ url_for('bulk_edit_income') }}">
+        <input type="hidden" name="csrf_token" value="{{ form.csrf_token._value() }}">
+        <input type="hidden" name="days" value="{{ inc_filter_days or '' }}">
+        <div id="incEditIds"></div>
+        <div class="modal-body">
+          <p class="text-muted mb-3" style="font-size:0.9rem;">
+            Choose a new source for the <strong id="incEditCount"></strong> selected income entr(y/ies).
+          </p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Income Source</label>
+            <select name="source" class="form-select" required>
+              <option value="">-- Select Source --</option>
+              <option value="salary">Salary</option>
+              <option value="business">Business</option>
+              <option value="allowance">Allowance</option>
+              <option value="freelance">Freelance</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:1.5px solid var(--border-color);">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>Apply to Selected
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var amtEl = document.getElementById('income_amount');
+    var fbEl = document.getElementById('fb_income_amount');
+    if (!amtEl || !fbEl) return;
+    amtEl.addEventListener('blur', function () {
+      var v = parseFloat(this.value);
+      if (!this.value) return;
+      var ok = v > 0;
+      fbEl.innerHTML = ok
+        ? '<i class="bi bi-check-circle-fill"></i> Valid amount'
+        : '<i class="bi bi-x-circle-fill"></i> Amount must be greater than 0';
+      fbEl.className = 'field-feedback show ' + (ok ? 'valid' : 'invalid');
+      this.classList.toggle('is-valid-animated', ok);
+      this.classList.toggle('is-invalid-animated', !ok);
+    });
+  })();
+
+  // ── Multi-select logic ──
+  const incSelectAll = document.getElementById('incSelectAll');
+  const incBulkBar   = document.getElementById('incBulkBar');
+  const incBulkCount = document.getElementById('incBulkCount');
+
+  function getCheckedIncIds() {
+    return Array.from(document.querySelectorAll('.inc-row-check:checked')).map(cb => cb.value);
+  }
+
+  function updateIncBulkBar() {
+    const ids = getCheckedIncIds();
+    if (ids.length > 0) {
+      incBulkCount.textContent = ids.length + ' selected';
+      incBulkBar.style.display = 'block';
+    } else {
+      incBulkBar.style.display = 'none';
+    }
+    const total = document.querySelectorAll('.inc-row-check').length;
+    if (incSelectAll) {
+      incSelectAll.indeterminate = ids.length > 0 && ids.length < total;
+      incSelectAll.checked = ids.length === total && total > 0;
+    }
+  }
+
+  if (incSelectAll) {
+    incSelectAll.addEventListener('change', function () {
+      document.querySelectorAll('.inc-row-check').forEach(cb => cb.checked = this.checked);
+      updateIncBulkBar();
+    });
+  }
+
+  document.querySelectorAll('.inc-row-check').forEach(cb => {
+    cb.addEventListener('change', updateIncBulkBar);
+  });
+
+  document.getElementById('incBulkClear').addEventListener('click', function () {
+    document.querySelectorAll('.inc-row-check').forEach(cb => cb.checked = false);
+    if (incSelectAll) { incSelectAll.checked = false; incSelectAll.indeterminate = false; }
+    incBulkBar.style.display = 'none';
+  });
+
+  document.getElementById('incBulkDeleteBtn').addEventListener('click', function () {
+    const ids = getCheckedIncIds();
+    if (!ids.length) return;
+    if (!confirm('Delete ' + ids.length + ' selected income entr' + (ids.length === 1 ? 'y' : 'ies') + '? This cannot be undone.')) return;
+    const container = document.getElementById('incDeleteIds');
+    container.innerHTML = '';
+    ids.forEach(id => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'ids'; inp.value = id;
+      container.appendChild(inp);
+    });
+    document.getElementById('incBulkDeleteForm').submit();
+  });
+
+  document.getElementById('incBulkEditBtn').addEventListener('click', function () {
+    const ids = getCheckedIncIds();
+    if (!ids.length) return;
+    document.getElementById('incEditCount').textContent = ids.length;
+    const container = document.getElementById('incEditIds');
+    container.innerHTML = '';
+    ids.forEach(id => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'ids'; inp.value = id;
+      container.appendChild(inp);
+    });
+    new bootstrap.Modal(document.getElementById('incBulkEditModal')).show();
+  });
+</script>
+{% endblock %}

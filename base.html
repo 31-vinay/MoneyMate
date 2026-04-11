@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#008080">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Money Mate">
+  <meta name="description" content="Smart personal finance management">
+  <meta name="msapplication-TileColor" content="#008080">
+  <title>Money Mate</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=14">
+  <script>
+    (function () {
+      if (localStorage.getItem('darkMode') === 'true') {
+        document.documentElement.classList.add('dark-mode');
+        document.cookie = 'darkMode=true; path=/; max-age=31536000';
+      }
+    })();
+  </script>
+</head>
+
+<body>
+
+  {% set _page_titles = {
+  'dashboard': 'Dashboard',
+  'add_income': 'Income',
+  'edit_income': 'Edit Income',
+  'add_expense': 'Expenses',
+  'edit_expense': 'Edit Expense',
+  'subscriptions': 'Subscriptions',
+  'goals': 'Goals',
+  'add_goal': 'Add Goal',
+  'edit_goal': 'Edit Goal',
+  'goal_detail': 'Goal Detail',
+  'analysis': 'Analysis',
+  'email_import': 'Import',
+  'settings': 'Settings',
+  'setup_mpin': 'Security',
+  'change_mpin': 'Change MPIN',
+  'request_account_info': 'Account Info',
+  'tutorial': 'Tutorial',
+  'login': 'Login',
+  'register': 'Register',
+  } %}
+  <nav class="creative-navbar">
+    <div class="nav-inner">
+      <a class="brand-logo" href="{{ url_for('index') }}">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Money Mate" class="brand-logo-img">
+      </a>
+
+      <!-- Mobile page title (centred, visible only on mobile) -->
+      {% if request.endpoint in _page_titles %}
+      <span class="mobile-page-title">{{ _page_titles[request.endpoint] }}</span>
+      {% endif %}
+
+      <!-- Desktop nav links -->
+      <ul class="desktop-nav-links">
+        {% if current_user.is_authenticated %}
+        <li><a class="nav-link {% if request.endpoint == 'dashboard' %}active-nav{% endif %}"
+            href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+        <li><a class="nav-link {% if request.endpoint in ('add_income','edit_income') %}active-nav{% endif %}"
+            href="{{ url_for('add_income') }}"><i class="bi bi-cash-coin"></i> Income</a></li>
+        <li><a class="nav-link {% if request.endpoint in ('add_expense','edit_expense') %}active-nav{% endif %}"
+            href="{{ url_for('add_expense') }}"><i class="bi bi-wallet2"></i> Expenses</a></li>
+        <li><a class="nav-link {% if request.endpoint == 'subscriptions' %}active-nav{% endif %}"
+            href="{{ url_for('subscriptions') }}"><i class="bi bi-arrow-repeat"></i> Subscriptions</a></li>
+        <li><a
+            class="nav-link {% if request.endpoint in ('goals','add_goal','edit_goal','goal_detail') %}active-nav{% endif %}"
+            href="{{ url_for('goals') }}"><i class="bi bi-bullseye"></i> Goals</a></li>
+        <li><a class="nav-link {% if request.endpoint == 'analysis' %}active-nav{% endif %}"
+            href="{{ url_for('analysis') }}"><i class="bi bi-bar-chart-line"></i> Analysis</a></li>
+        <li><a class="nav-link {% if request.endpoint == 'email_import' %}active-nav{% endif %}"
+            href="{{ url_for('email_import') }}"><i class="bi bi-file-earmark-arrow-down"></i> Import</a></li>
+        <li>
+          <a class="nav-link {% if request.endpoint in ('settings','setup_mpin','change_mpin','change_password','change_email','request_account_info') %}active-nav{% endif %}"
+            href="{{ url_for('settings') }}" title="Settings">
+            <i class="bi bi-gear-fill"></i> Settings
+          </a>
+        </li>
+        <li>
+          <a class="btn-logout" href="{{ url_for('logout') }}">
+            <i class="bi bi-box-arrow-right"></i> Logout
+          </a>
+        </li>
+        {% else %}
+        <li><a class="nav-link {% if request.endpoint == 'login' %}active-nav{% endif %}"
+            href="{{ url_for('login') }}"><i class="bi bi-box-arrow-in-right"></i> Login</a></li>
+        <li>
+          <a class="btn-register" href="{{ url_for('register') }}">
+            <i class="bi bi-person-plus"></i> Register
+          </a>
+        </li>
+        <li>
+          <button onclick="toggleDark()" class="dark-toggle-btn" title="Toggle dark mode">
+            <i class="bi bi-moon-stars-fill" id="darkIcon"></i>
+          </button>
+        </li>
+        {% endif %}
+      </ul>
+
+      <!-- Mobile right controls -->
+      <div class="mobile-controls">
+        <button onclick="toggleDark()" class="dark-toggle-btn" title="Toggle dark mode">
+          <i class="bi bi-moon-stars-fill" id="darkIconMobile"></i>
+        </button>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()" aria-label="Open menu">
+          <i class="bi bi-list" id="mobileMenuIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown -->
+    <div class="mobile-dropdown" id="mobileDropdown">
+      <div class="mobile-dropdown-inner">
+        {% if current_user.is_authenticated %}
+        <a class="mobile-nav-item{% if request.endpoint == 'dashboard' %} active-mobile-nav{% endif %}"
+          href="{{ url_for('dashboard') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint in ('add_income', 'edit_income') %} active-mobile-nav{% endif %}"
+          href="{{ url_for('add_income') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-cash-coin"></i> Income
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint in ('add_expense', 'edit_expense') %} active-mobile-nav{% endif %}"
+          href="{{ url_for('add_expense') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-wallet2"></i> Expenses
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint == 'subscriptions' %} active-mobile-nav{% endif %}"
+          href="{{ url_for('subscriptions') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-arrow-repeat"></i> Subscriptions
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint in ['goals', 'goal_detail', 'add_goal', 'edit_goal'] %} active-mobile-nav{% endif %}"
+          href="{{ url_for('goals') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-bullseye"></i> Goals
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint == 'analysis' %} active-mobile-nav{% endif %}"
+          href="{{ url_for('analysis') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-bar-chart-line"></i> Analysis
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint == 'email_import' %} active-mobile-nav{% endif %}"
+          href="{{ url_for('email_import') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-file-earmark-arrow-down"></i> Import
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint == 'settings' %} active-mobile-nav{% endif %}"
+          href="{{ url_for('settings') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-gear-fill"></i> Settings
+        </a>
+        <div class="mobile-dropdown-divider"></div>
+        <a class="mobile-nav-item mobile-nav-danger" href="{{ url_for('logout') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+        {% else %}
+        <a class="mobile-nav-item{% if request.endpoint == 'login' %} active-mobile-nav{% endif %}"
+          href="{{ url_for('login') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint == 'register' %} active-mobile-nav{% endif %}"
+          href="{{ url_for('register') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-person-plus"></i> Register
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile dropdown backdrop -->
+  <div class="mobile-backdrop" id="mobileBackdrop" onclick="closeMobileMenu()"></div>
+
+  <!-- Page transition overlay -->
+  <div id="page-transition-overlay"></div>
+
+  <main class="container-xxl my-4 px-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show alert-enhanced" role="alert"
+      data-auto-dismiss="5000">
+      {% if category == 'success' %}<i class="bi bi-check-circle-fill me-2"></i>
+      {% elif category == 'danger' %}<i class="bi bi-exclamation-triangle-fill me-2"></i>
+      {% elif category == 'warning' %}<i class="bi bi-exclamation-circle-fill me-2"></i>
+      {% else %}<i class="bi bi-info-circle-fill me-2"></i>{% endif %}
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <div class="alert-progress-bar"></div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="text-center py-3">
+    <p>© 2026 <strong>Money Mate</strong> &mdash; Smart personal finance management.</p>
+  </footer>
+
+  <!-- Floating Help Button -->
+  <button class="help-fab" id="helpFab" onclick="toggleHelp()" title="Help">
+    <i class="bi bi-question-lg"></i>
+  </button>
+
+  <!-- Help Panel -->
+  <div class="help-overlay" id="helpOverlay" onclick="closeHelp()"></div>
+  <div class="help-panel" id="helpPanel">
+    <div class="help-panel-header">
+      <div>
+        <h5 class="mb-0 fw-bold"><i class="bi bi-question-circle-fill me-2" style="color:var(--brand-primary);"></i>Help
+          &amp; Guide</h5>
+        <p class="mb-0 text-muted" style="font-size:0.82rem;">How to use Money Mate</p>
+      </div>
+      <button class="help-close-btn" onclick="closeHelp()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="help-panel-body">
+
+      <div class="help-section">
+        <div class="help-section-title"><i class="bi bi-speedometer2"></i> Dashboard</div>
+        <p>Your financial overview for the current month. See total income, spending, net balance, and daily burn rate.
+          The dashboard <strong>auto-resets</strong> at the start of each new month — only subscriptions and recurring
+          salary are kept.</p>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title"><i class="bi bi-cash-coin"></i> Adding Income</div>
+        <p>Go to <strong>Income</strong> in the nav. Choose the source (Salary, Business, Freelance, etc.), enter the
+          amount, and optionally pick the date it was received.</p>
+        <div class="help-tip"><i class="bi bi-lightbulb-fill"></i> Check <strong>"Recurring / Monthly Salary?"</strong>
+          so it's preserved when the dashboard resets each month.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title"><i class="bi bi-wallet2"></i> Tracking Expenses</div>
+        <p>Go to <strong>Expenses</strong> and pick a main category and sub-category. Each expense is automatically
+          tagged as a <span class="badge bg-success">Need</span> or <span class="badge bg-warning text-dark">Want</span>
+          based on the 50/30/20 rule.</p>
+        <div class="help-tip"><i class="bi bi-lightbulb-fill"></i> Check <strong>"Recurring Subscription?"</strong> to
+          set a start &amp; end date and get expiry reminders.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title"><i class="bi bi-arrow-repeat"></i> Subscriptions</div>
+        <p>Automatically detects recurring expenses from the last 3 months. You can also manually mark any expense as a
+          subscription. Set an <strong>end date</strong> to get a reminder 7 days before it expires.</p>
+        <div class="help-tip"><i class="bi bi-lightbulb-fill"></i> Expired subscriptions show a <span
+            class="badge bg-danger">Expired</span> badge — tap the trash icon to remove them.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title"><i class="bi bi-bullseye"></i> Savings Goals</div>
+        <p>Create goals with a target amount and monthly savings plan. The app calculates how many months it will take
+          to reach your goal and shows a timeline with milestones.</p>
+        <div class="help-tip"><i class="bi bi-lightbulb-fill"></i> Use the <strong>What-If</strong> tool on a goal to
+          see how reducing spending can get you there faster.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title"><i class="bi bi-pie-chart-fill"></i> The 50/30/20 Rule</div>
+        <p>A simple budgeting guideline:</p>
+        <ul class="help-rule-list">
+          <li><span class="badge bg-success">50%</span> Needs — rent, food, utilities, healthcare</li>
+          <li><span class="badge bg-warning text-dark">30%</span> Wants — dining out, entertainment, travel</li>
+          <li><span class="badge bg-primary">20%</span> Savings — goals, investments, emergency fund</li>
+        </ul>
+        <p class="mt-2 mb-0">Money Mate automatically classifies your expenses and shows how close you are to each
+          target.</p>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title"><i class="bi bi-moon-stars-fill"></i> Dark Mode</div>
+        <p>Click the moon/sun icon in the navbar to toggle dark mode. Your preference is saved automatically.</p>
+      </div>
+
+    </div>
+  </div>
+
+  {% if current_user.is_authenticated %}
+  <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+    <a href="{{ url_for('dashboard') }}"
+      class="bottom-nav-item {% if request.endpoint == 'dashboard' %}active-bottom-nav{% endif %}">
+      <i class="bi bi-speedometer2"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="{{ url_for('add_income') }}"
+      class="bottom-nav-item {% if request.endpoint in ('add_income','edit_income') %}active-bottom-nav{% endif %}">
+      <i class="bi bi-cash-coin"></i>
+      <span>Income</span>
+    </a>
+    <a href="{{ url_for('add_expense') }}"
+      class="bottom-nav-item {% if request.endpoint in ('add_expense','edit_expense') %}active-bottom-nav{% endif %}">
+      <i class="bi bi-wallet2"></i>
+      <span>Expenses</span>
+    </a>
+    <a href="{{ url_for('goals') }}"
+      class="bottom-nav-item {% if request.endpoint in ('goals','add_goal','edit_goal','goal_detail') %}active-bottom-nav{% endif %}">
+      <i class="bi bi-bullseye"></i>
+      <span>Goals</span>
+    </a>
+    <button
+      class="bottom-nav-item {% if request.endpoint in ('analysis','subscriptions','email_import','settings','setup_mpin','change_mpin','request_account_info','tutorial') %}active-bottom-nav{% endif %}"
+      onclick="toggleMobileMenu()" aria-label="More menu">
+      <i class="bi bi-grid-3x3-gap-fill"></i>
+      <span>More</span>
+    </button>
+  </nav>
+  {% endif %}
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function setDarkCookie(val) {
+      document.cookie = 'darkMode=' + val + '; path=/; max-age=31536000';
+    }
+    function toggleDark() {
+      const isDark = !document.documentElement.classList.contains('dark-mode');
+      document.documentElement.classList.toggle('dark-mode', isDark);
+      document.body.classList.toggle('dark-mode', isDark);
+      localStorage.setItem('darkMode', isDark);
+      setDarkCookie(isDark);
+      updateDarkIcon();
+      const toggle = document.getElementById('darkModeToggle');
+      if (toggle) toggle.checked = isDark;
+    }
+    function updateDarkIcon() {
+      const isDark = document.documentElement.classList.contains('dark-mode');
+      const icons = document.querySelectorAll('#darkIcon, #darkIconMobile');
+      icons.forEach(icon => {
+        if (!icon) return;
+        icon.className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+      });
+    }
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.body.classList.add('dark-mode');
+    }
+    document.addEventListener('DOMContentLoaded', updateDarkIcon);
+
+    function toggleMobileMenu() {
+      const dropdown = document.getElementById('mobileDropdown');
+      const backdrop = document.getElementById('mobileBackdrop');
+      const icon = document.getElementById('mobileMenuIcon');
+      const isOpen = dropdown.classList.contains('open');
+      if (isOpen) {
+        closeMobileMenu();
+      } else {
+        dropdown.classList.add('open');
+        backdrop.classList.add('active');
+        icon.className = 'bi bi-x-lg';
+      }
+    }
+    function closeMobileMenu() {
+      const dropdown = document.getElementById('mobileDropdown');
+      const backdrop = document.getElementById('mobileBackdrop');
+      const icon = document.getElementById('mobileMenuIcon');
+      dropdown.classList.remove('open');
+      backdrop.classList.remove('active');
+      icon.className = 'bi bi-list';
+    }
+
+    // Convert all UTC timestamps to browser local time
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.local-time[data-utc]').forEach(function (el) {
+        const utc = el.getAttribute('data-utc');
+        if (!utc) return;
+        const d = new Date(utc);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const day = String(d.getDate()).padStart(2, '0');
+        const mon = months[d.getMonth()];
+        const yr = d.getFullYear();
+        let h = d.getHours();
+        const m = String(d.getMinutes()).padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        el.textContent = `${day} ${mon} ${yr} ${h}:${m} ${ampm}`;
+      });
+    });
+
+    function toggleHelp() {
+      const panel = document.getElementById('helpPanel');
+      const overlay = document.getElementById('helpOverlay');
+      const isOpen = panel.classList.contains('open');
+      if (isOpen) {closeHelp();} else {
+        panel.classList.add('open');
+        overlay.classList.add('active');
+      }
+    }
+    function closeHelp() {
+      document.getElementById('helpPanel').classList.remove('open');
+      document.getElementById('helpOverlay').classList.remove('active');
+    }
+
+    // ── Global: Scroll-Reveal via Intersection Observer ──
+    (function () {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.addEventListener('DOMContentLoaded', function () {
+          document.querySelectorAll('.reveal').forEach(function (el) {el.classList.add('revealed');});
+        });
+        return;
+      }
+      if (!('IntersectionObserver' in window)) {
+        document.addEventListener('DOMContentLoaded', function () {
+          document.querySelectorAll('.reveal').forEach(function (el) {el.classList.add('revealed');});
+        });
+        return;
+      }
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {threshold: 0.08, rootMargin: '0px 0px -40px 0px'});
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.reveal').forEach(function (el) {
+          observer.observe(el);
+        });
+      });
+    })();
+
+    // ── Global: Button ripple effect ──
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('.btn');
+      if (!btn) return;
+      const ripple = document.createElement('span');
+      ripple.classList.add('ripple');
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      btn.appendChild(ripple);
+      ripple.addEventListener('animationend', function () {ripple.remove();});
+    });
+
+    // ── Global: Flash message auto-dismiss with progress bar ──
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('[data-auto-dismiss]').forEach(function (alert) {
+        const delay = parseInt(alert.getAttribute('data-auto-dismiss')) || 5000;
+        setTimeout(function () {
+          const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+          if (bsAlert) bsAlert.close();
+        }, delay);
+      });
+    });
+
+    // ── Global: Page-exit fade transition ──
+    (function () {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      document.addEventListener('click', function (e) {
+        const link = e.target.closest('a[href]');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript') ||
+          link.hasAttribute('data-bs-toggle') || link.hasAttribute('download') ||
+          link.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        if (href.startsWith('http') && !href.includes(location.hostname)) return;
+        if (link.getAttribute('onclick') && link.getAttribute('onclick').includes('confirm')) return;
+        e.preventDefault();
+        const overlay = document.getElementById('page-transition-overlay');
+        if (overlay) {
+          overlay.classList.add('fading');
+          setTimeout(function () {window.location.href = href;}, 200);
+        } else {
+          window.location.href = href;
+        }
+      });
+      window.addEventListener('pageshow', function () {
+        const overlay = document.getElementById('page-transition-overlay');
+        if (overlay) overlay.classList.remove('fading');
+      });
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', {scope: '/'})
+          .then((reg) => {
+            reg.addEventListener('updatefound', () => {
+              const newSW = reg.installing;
+              if (!newSW) return;
+              newSW.addEventListener('statechange', () => {
+                if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                  const banner = document.createElement('div');
+                  banner.className = 'pwa-install-banner';
+                  banner.style.cssText = 'position:fixed;bottom:calc(70px + env(safe-area-inset-bottom,0px));left:1rem;right:1rem;z-index:9999;background:#008080;color:white;padding:0.75rem 1rem;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:1rem;box-shadow:0 4px 20px rgba(0,128,128,0.4);font-size:0.88rem;font-weight:500;';
+                  banner.innerHTML = '<span><i class="bi bi-arrow-clockwise me-2"></i>App updated — reload for the latest version</span><button onclick="window.location.reload()" style="background:white;color:#008080;border:none;border-radius:8px;padding:0.35rem 0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;">Reload</button>';
+                  document.body.appendChild(banner);
+                  setTimeout(() => banner.remove(), 12000);
+                }
+              });
+            });
+          })
+          .catch((err) => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+
+</html>

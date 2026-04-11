@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .mpin-wrap {
+    min-height: 72vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mpin-card {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 128, 128, 0.2);
+    border: none;
+  }
+
+  .mpin-header {
+    background: linear-gradient(135deg, #008080 0%, #006666 100%);
+    color: white;
+    padding: 2.2rem 2rem 1.8rem;
+    text-align: center;
+  }
+
+  .mpin-header .mpin-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.7rem;
+    margin: 0 auto 1rem;
+  }
+
+  .mpin-header h3 {
+    font-weight: 700;
+    margin: 0 0 4px;
+    font-size: 1.4rem;
+  }
+
+  .mpin-header p {
+    opacity: 0.8;
+    font-size: 0.88rem;
+    margin: 0;
+  }
+
+  .mpin-body {
+    padding: 2rem;
+    background: var(--bg-card);
+  }
+
+  .pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .pin-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 128, 128, 0.4);
+    background: transparent;
+    transition: all 0.2s;
+  }
+
+  .pin-dot.filled {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+    transform: scale(1.15);
+  }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .numpad-btn {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-secondary);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .numpad-btn:hover {
+    background: rgba(0, 128, 128, 0.1);
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+  }
+
+  .numpad-btn:active {
+    transform: scale(0.92);
+  }
+
+  .numpad-btn.backspace {
+    font-size: 1.1rem;
+  }
+
+  .numpad-btn.empty-btn {
+    visibility: hidden;
+  }
+
+  .pin-label {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .hidden-pin {
+    display: none;
+  }
+
+  .btn-auth {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #008080, #006666);
+    color: white;
+    border: none;
+    transition: all 0.28s;
+    box-shadow: 0 6px 20px rgba(0, 128, 128, 0.3);
+  }
+
+  .btn-auth:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0, 128, 128, 0.4);
+    color: white;
+  }
+
+  .btn-auth:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+</style>
+
+<div class="mpin-wrap">
+  <div class="mpin-card reveal">
+    <div class="mpin-header">
+      <div class="mpin-icon"><i class="bi bi-shield-lock-fill"></i></div>
+      {% if mode == 'change' %}
+      <h3>Change MPIN</h3>
+      <p>Update your 6-digit quick-login PIN</p>
+      {% else %}
+      <h3>Set Up MPIN</h3>
+      <p>Create a 6-digit PIN for quick login</p>
+      {% endif %}
+    </div>
+    <div class="mpin-body">
+
+      {% if mode == 'change' %}
+      <!-- Step 0: current PIN -->
+      <div id="step-old">
+        <p class="pin-label">Enter your current MPIN</p>
+        <div class="pin-dots" id="dots-old">
+          {% for _ in range(6) %}<div class="pin-dot" id="dot-old-{{ loop.index0 }}"></div>{% endfor %}
+        </div>
+        <div class="numpad" id="pad-old">
+          {% for n in [1,2,3,4,5,6,7,8,9] %}
+          <button type="button" class="numpad-btn" onclick="padPress('old',{{ n }})">{{ n }}</button>
+          {% endfor %}
+          <button type="button" class="numpad-btn empty-btn">-</button>
+          <button type="button" class="numpad-btn" onclick="padPress('old',0)">0</button>
+          <button type="button" class="numpad-btn backspace" onclick="padBack('old')"><i
+              class="bi bi-backspace"></i></button>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Step 1: new PIN -->
+      <div id="step-new" {% if mode=='change' %}style="display:none" {% endif %}>
+        <p class="pin-label">Enter new MPIN</p>
+        <div class="pin-dots" id="dots-new">
+          {% for _ in range(6) %}<div class="pin-dot" id="dot-new-{{ loop.index0 }}"></div>{% endfor %}
+        </div>
+        <div class="numpad">
+          {% for n in [1,2,3,4,5,6,7,8,9] %}
+          <button type="button" class="numpad-btn" onclick="padPress('new',{{ n }})">{{ n }}</button>
+          {% endfor %}
+          <button type="button" class="numpad-btn empty-btn">-</button>
+          <button type="button" class="numpad-btn" onclick="padPress('new',0)">0</button>
+          <button type="button" class="numpad-btn backspace" onclick="padBack('new')"><i
+              class="bi bi-backspace"></i></button>
+        </div>
+      </div>
+
+      <!-- Step 2: confirm PIN -->
+      <div id="step-confirm" style="display:none">
+        <p class="pin-label">Confirm new MPIN</p>
+        <div class="pin-dots" id="dots-confirm">
+          {% for _ in range(6) %}<div class="pin-dot" id="dot-confirm-{{ loop.index0 }}"></div>{% endfor %}
+        </div>
+        <div class="numpad">
+          {% for n in [1,2,3,4,5,6,7,8,9] %}
+          <button type="button" class="numpad-btn" onclick="padPress('confirm',{{ n }})">{{ n }}</button>
+          {% endfor %}
+          <button type="button" class="numpad-btn empty-btn">-</button>
+          <button type="button" class="numpad-btn" onclick="padPress('confirm',0)">0</button>
+          <button type="button" class="numpad-btn backspace" onclick="padBack('confirm')"><i
+              class="bi bi-backspace"></i></button>
+        </div>
+      </div>
+
+      <!-- Password verification (for setup only) -->
+      <div id="step-password" style="display:none">
+        <p class="text-muted" style="font-size:0.87rem;text-align:center;">Verify with your account password to save the
+          MPIN.</p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.88rem;">Account Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input type="password" id="pwdInput" class="form-control" placeholder="Enter your password">
+          </div>
+          <div class="field-feedback" id="fb_mpin_pwd"></div>
+        </div>
+        <button type="button" class="btn-auth" onclick="submitForm()">
+          <i class="bi bi-shield-check me-2"></i>Save MPIN
+        </button>
+      </div>
+
+      <small id="pin-error" class="text-danger d-block text-center mt-2"
+        style="display:none!important;min-height:18px;"></small>
+
+      <form id="mpinForm" method="POST" action="{{ url_for('change_mpin' if mode == 'change' else 'setup_mpin') }}">
+        <input type="hidden" name="old_pin" id="f_old_pin">
+        <input type="hidden" name="new_pin" id="f_new_pin">
+        <input type="hidden" name="confirm_pin" id="f_confirm_pin">
+        <input type="hidden" name="current_password" id="f_password">
+      </form>
+
+      <div class="text-center mt-3">
+        <a href="{{ url_for('settings') }}" class="text-muted" style="font-size:0.85rem;">← Back to Settings</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const mode = "{{ mode }}";
+  const pins = {old: '', new: '', confirm: ''};
+
+  function updateDots(which) {
+    const len = pins[which].length;
+    for (let i = 0; i < 6; i++) {
+      const d = document.getElementById('dot-' + which + '-' + i);
+      if (d) d.classList.toggle('filled', i < len);
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('pin-error');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => {el.style.display = 'none';}, 2500);
+  }
+
+  function shakeStep(stepId) {
+    const el = document.getElementById(stepId);
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = 'shake 0.4s ease';
+    setTimeout(() => el.style.animation = '', 500);
+  }
+
+  function padPress(which, digit) {
+    if (pins[which].length >= 6) return;
+    pins[which] += String(digit);
+    updateDots(which);
+    if (pins[which].length === 6) {
+      setTimeout(() => advance(which), 180);
+    }
+  }
+
+  function padBack(which) {
+    pins[which] = pins[which].slice(0, -1);
+    updateDots(which);
+  }
+
+  function advance(which) {
+    if (which === 'old') {
+      document.getElementById('step-old').style.display = 'none';
+      document.getElementById('step-new').style.display = 'block';
+    } else if (which === 'new') {
+      document.getElementById('step-new').style.display = 'none';
+      document.getElementById('step-confirm').style.display = 'block';
+    } else if (which === 'confirm') {
+      if (pins.new !== pins.confirm) {
+        showError('PINs do not match. Try again.');
+        pins.confirm = ''; updateDots('confirm');
+        shakeStep('step-confirm');
+        return;
+      }
+      if (mode === 'setup') {
+        document.getElementById('step-confirm').style.display = 'none';
+        document.getElementById('step-password').style.display = 'block';
+      } else {
+        submitForm();
+      }
+    }
+  }
+
+  function submitForm() {
+    const pwdEl = document.getElementById('pwdInput');
+    const pwd = pwdEl ? pwdEl.value : '';
+    if (pwdEl && !pwd) {
+      var fb = document.getElementById('fb_mpin_pwd');
+      if (fb) {
+        fb.innerHTML = '<i class="bi bi-x-circle-fill"></i> Password is required.';
+        fb.className = 'field-feedback show invalid';
+      }
+      pwdEl.classList.add('is-invalid-animated');
+      return;
+    }
+    if (pwdEl && pwd) {
+      var fb = document.getElementById('fb_mpin_pwd');
+      if (fb) {
+        fb.innerHTML = '<i class="bi bi-check-circle-fill"></i> Password verified.';
+        fb.className = 'field-feedback show valid';
+      }
+      pwdEl.classList.remove('is-invalid-animated');
+      pwdEl.classList.add('is-valid-animated');
+    }
+    document.getElementById('f_old_pin').value = pins.old;
+    document.getElementById('f_new_pin').value = pins.new;
+    document.getElementById('f_confirm_pin').value = pins.confirm;
+    document.getElementById('f_password').value = pwd;
+    document.getElementById('mpinForm').submit();
+  }
+
+  (function () {
+    var pwdEl = document.getElementById('pwdInput');
+    if (pwdEl) {
+      pwdEl.addEventListener('blur', function () {
+        if (!this.value) return;
+        var fb = document.getElementById('fb_mpin_pwd');
+        if (fb) {
+          var ok = this.value.length >= 4;
+          fb.innerHTML = (ok ? '<i class="bi bi-check-circle-fill"></i> ' : '<i class="bi bi-x-circle-fill"></i> ') +
+            (ok ? 'Password entered.' : 'Password is too short.');
+          fb.className = 'field-feedback show ' + (ok ? 'valid' : 'invalid');
+          this.classList.toggle('is-valid-animated', ok);
+          this.classList.toggle('is-invalid-animated', !ok);
+        }
+      });
+    }
+  })();
+</script>
+
+<style>
+  @keyframes shake {
+
+    0%,
+    100% {
+      transform: translateX(0)
+    }
+
+    20% {
+      transform: translateX(-8px)
+    }
+
+    40% {
+      transform: translateX(8px)
+    }
+
+    60% {
+      transform: translateX(-5px)
+    }
+
+    80% {
+      transform: translateX(5px)
+    }
+  }
+</style>
+{% endblock %}

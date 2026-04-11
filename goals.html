@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 reveal">
+  <div>
+    <h4 class="fw-bold mb-0" style="color:var(--text-primary);">
+      <i class="bi bi-bullseye me-2" style="color:var(--brand-primary);"></i>Financial Goals
+    </h4>
+    <p class="text-muted mb-0" style="font-size:0.88rem;">Track your savings targets and milestones.</p>
+  </div>
+  <a href="{{ url_for('add_goal') }}" class="btn btn-success">
+    <i class="bi bi-plus-circle me-1"></i>New Goal
+  </a>
+</div>
+
+{% if goals %}
+<div class="row g-3">
+  {% for goal in goals %}
+  <div class="col-md-6 reveal" style="transition-delay: {{ loop.index0 * 0.08 }}s;">
+    <div class="card h-100 goal-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-flag me-2"></i>{{ goal.name }}</span>
+        <div class="d-flex gap-1 align-items-center">
+          <span class="badge" style="background:rgba(255,255,255,0.25);font-size:0.7rem;">#{{ goal.priority }}</span>
+          {% if goal.progress_percentage >= 100 %}
+          <span class="badge" style="background:rgba(255,255,255,0.25);">🎉 Done!</span>
+          {% elif goal.progress_percentage >= 75 %}
+          <span class="badge" style="background:rgba(255,255,255,0.25);">Almost!</span>
+          {% else %}
+          <span class="badge" style="background:rgba(255,255,255,0.2);">In Progress</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- Progress -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1" style="font-size:0.85rem;">
+            <span class="text-muted">Progress</span>
+            <span class="fw-700" style="color:var(--brand-primary);">{{ "%.1f"|format(goal.progress_percentage)
+              }}%</span>
+          </div>
+          <div class="progress" style="height:14px;">
+            <div class="progress-bar bg-success" style="width:{{ goal.progress_percentage }}%;"></div>
+          </div>
+          <div class="d-flex justify-content-between mt-1" style="font-size:0.78rem;color:var(--text-muted);">
+            <span>₹{{ "%.0f"|format(goal.saved_amount) }} saved</span>
+            <span>₹{{ "%.0f"|format(goal.target_amount) }} target</span>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="p-2 rounded text-center" style="background:rgba(0, 128, 128,0.07);">
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);">Monthly
+              </div>
+              <div class="fw-700" style="font-size:1rem;">₹{{ "%.0f"|format(goal.monthly_savings) }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-2 rounded text-center" style="background:rgba(243,156,18,0.08);">
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);">Remaining
+              </div>
+              <div class="fw-700" style="font-size:1rem;color:#f39c12;">₹{{ "%.0f"|format(goal.remaining_amount) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% if goal.monthly_savings > 0 %}
+        <div class="p-2 rounded mb-3 d-flex align-items-center gap-2"
+          style="background:rgba(0,184,148,0.07);font-size:0.85rem;">
+          <i class="bi bi-clock" style="color:#00b894;"></i>
+          <span>Est. <strong>{{ "%.1f"|format(goal.estimated_months) }} months</strong> to go</span>
+        </div>
+        {% endif %}
+
+        {% if goal.target_date %}
+        <div class="p-2 rounded mb-3" style="background:rgba(9,132,227,0.07);font-size:0.82rem;color:#0984e3;">
+          <i class="bi bi-calendar-event me-1"></i>Target: {{ goal.target_date.strftime('%d %b %Y') }}
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('goal_detail', id=goal.id) }}" class="btn btn-primary flex-grow-1">
+            <i class="bi bi-eye me-1"></i>View Details
+          </a>
+          <a href="{{ url_for('edit_goal', id=goal.id) }}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil-square"></i>
+          </a>
+          <a href="{{ url_for('delete_goal', id=goal.id) }}" class="btn btn-danger"
+            onclick="return confirm('Delete this goal?')">
+            <i class="bi bi-trash"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card reveal">
+  <div class="card-body text-center py-5">
+    <div style="font-size:4rem;margin-bottom:1rem;opacity:0.4;">🎯</div>
+    <h4 class="mb-2">No Goals Yet</h4>
+    <p class="text-muted mb-4">Set a savings goal and track your progress toward it.</p>
+    <a href="{{ url_for('add_goal') }}" class="btn btn-success btn-lg">
+      <i class="bi bi-plus-circle me-2"></i>Create Your First Goal
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

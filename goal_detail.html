@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mb-3 reveal d-flex gap-2">
+  <a href="{{ url_for('goals') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back to Goals
+  </a>
+  <a href="{{ url_for('edit_goal', id=goal.id) }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-pencil-square me-1"></i>Edit Goal
+  </a>
+</div>
+
+<div class="row g-3">
+  <!-- Goal Overview -->
+  <div class="col-md-6">
+    <div class="card h-100 reveal">
+      <div class="card-header"><i class="bi bi-flag me-1"></i>{{ goal.name }}</div>
+      <div class="card-body">
+
+        <!-- Progress Bar -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="fw-600">Progress</span>
+            <span class="fw-700" style="color:var(--brand-primary);">{{ "%.1f"|format(goal.progress_percentage)
+              }}%</span>
+          </div>
+          <div class="progress" style="height:20px;">
+            <div class="progress-bar bg-success" style="width:{{ goal.progress_percentage }}%;"></div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="p-3 rounded text-center" style="background:rgba(0,184,148,0.08);">
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);">Saved
+              </div>
+              <div class="fw-700" style="font-size:1.2rem;color:#00b894;">₹{{ "%.0f"|format(goal.saved_amount) }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded text-center" style="background:rgba(0, 128, 128,0.07);">
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);">Target
+              </div>
+              <div class="fw-700" style="font-size:1.2rem;">₹{{ "%.0f"|format(goal.target_amount) }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded text-center" style="background:rgba(243,156,18,0.08);">
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);">Remaining
+              </div>
+              <div class="fw-700" style="font-size:1.1rem;color:#f39c12;">₹{{ "%.0f"|format(goal.remaining_amount) }}
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded text-center" style="background:rgba(9,132,227,0.07);">
+              <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);">Monthly
+              </div>
+              <div class="fw-700" style="font-size:1.1rem;">₹{{ "%.0f"|format(goal.monthly_savings) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        {% if goal.monthly_savings > 0 %}
+        <div class="p-3 rounded mb-3" style="background:rgba(0, 128, 128,0.07);">
+          <div class="fw-600 mb-1"><i class="bi bi-clock me-1"></i>Estimated Timeline</div>
+          <div>
+            <strong>{{ "%.1f"|format(goal.estimated_months) }} months</strong>
+            {% if goal.estimated_date %}
+            &mdash; {{ goal.estimated_date.strftime('%d %b %Y') }}
+            {% endif %}
+          </div>
+          {% if goal.target_date and goal.estimated_date %}
+          {% if goal.estimated_date <= goal.target_date %} <div class="text-success mt-1" style="font-size:0.88rem;"><i
+              class="bi bi-check-circle me-1"></i>On track to meet target date
+        </div>
+        {% else %}
+        <div style="color:#f39c12;font-size:0.88rem;margin-top:4px;"><i class="bi bi-exclamation-triangle me-1"></i>May
+          miss target date</div>
+        {% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if goal.target_date %}
+      <div class="p-2 rounded mb-3" style="background:rgba(9,132,227,0.07);font-size:0.85rem;color:#0984e3;">
+        <i class="bi bi-calendar-event me-1"></i>Target Date: <strong>{{ goal.target_date.strftime('%d %b %Y')
+          }}</strong>
+      </div>
+      {% endif %}
+
+      <!-- Add Savings -->
+      <div class="p-3 rounded" style="border:1.5px solid var(--border-color);">
+        <div class="fw-600 mb-2"><i class="bi bi-plus-circle me-1"></i>Add to Savings</div>
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          <div class="input-group mb-2">
+            <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+            {{ form.saved_amount(class="form-control", placeholder="Amount to add", step="0.01", min="0") }}
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Add
+            </button>
+          </div>
+          <small class="text-muted">Current: ₹{{ "%.0f"|format(goal.saved_amount) }}</small>
+        </form>
+        <div class="mt-2 d-flex gap-2 flex-wrap">
+          <button class="btn btn-sm btn-outline-secondary quick-add" data-amount="500">+₹500</button>
+          <button class="btn btn-sm btn-outline-secondary quick-add" data-amount="1000">+₹1,000</button>
+          <button class="btn btn-sm btn-outline-secondary quick-add" data-amount="2000">+₹2,000</button>
+          <button class="btn btn-sm btn-outline-secondary quick-add" data-amount="5000">+₹5,000</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- What-If Simulator -->
+<div class="col-md-6">
+  <div class="card h-100 reveal reveal-delay-1">
+    <div class="card-header"><i class="bi bi-sliders me-1"></i> What-If Simulator</div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label">Adjust Monthly Savings</label>
+        <input type="range" class="form-range" id="monthlySlider" min="0"
+          max="{{ goal.monthly_savings * 3 if goal.monthly_savings > 0 else 10000 }}" value="{{ goal.monthly_savings }}"
+          step="100">
+        <div class="d-flex justify-content-between" style="font-size:0.85rem;">
+          <span class="fw-600">₹<span id="monthlyValue">{{ "%.0f"|format(goal.monthly_savings) }}</span>/mo</span>
+          <span class="text-muted">Current: ₹{{ "%.0f"|format(goal.monthly_savings) }}</span>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Spending Reduction</label>
+        <input type="range" class="form-range" id="reductionSlider" min="0" max="10000" value="0" step="100">
+        <div class="d-flex justify-content-between" style="font-size:0.85rem;">
+          <span class="fw-600">₹<span id="reductionValue">0</span>/mo</span>
+          <span class="text-muted">From wants reduction</span>
+        </div>
+      </div>
+
+      <div class="p-3 rounded mb-3" style="background:rgba(0, 128, 128,0.07);">
+        <div class="fw-600 mb-2">New Timeline Estimate</div>
+        <table style="width:100%;font-size:0.88rem;">
+          <tr>
+            <td class="text-muted">Original:</td>
+            <td class="fw-600">
+              {% if goal.monthly_savings > 0 %}{{ "%.1f"|format(goal.estimated_months) }} months
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="text-muted">With changes:</td>
+            <td class="fw-700" id="newTime" style="color:var(--brand-primary);">—</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="alert alert-success py-2" id="savingsAlert" style="display:none;font-size:0.88rem;">
+        <i class="bi bi-stars me-1"></i> You'll save <strong id="timeSaved"></strong> months!
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Spending Suggestions -->
+{% if suggestions %}
+<div class="card mt-3 reveal reveal-delay-2">
+  <div class="card-header"><i class="bi bi-lightbulb me-1"></i> Spending Reduction Suggestions</div>
+  <div class="card-body">
+    <div class="row g-3">
+      {% for suggestion in suggestions %}
+      <div class="col-md-6">
+        <div class="p-3 rounded" style="background:rgba(0,184,148,0.07);border:1px solid rgba(0,184,148,0.2);">
+          <div class="fw-600 mb-1">{{ suggestion.category }}</div>
+          <div style="font-size:0.85rem;" class="text-muted mb-1">Current: ₹{{
+            "%.0f"|format(suggestion.current_spending) }}/mo</div>
+          <div style="font-size:0.85rem;color:#00b894;" class="mb-2">Reduce by: ₹{{
+            "%.0f"|format(suggestion.suggested_reduction) }}/mo</div>
+          <div class="fw-700">Save {{ "%.1f"|format(suggestion.months_saved) }} months!</div>
+          <button class="btn btn-sm btn-outline-secondary mt-2 apply-suggestion"
+            data-reduction="{{ suggestion.suggested_reduction }}">
+            Apply to Simulator
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Milestones -->
+{% if milestones %}
+<div class="card mt-3 reveal reveal-delay-3">
+  <div class="card-header"><i class="bi bi-calendar3 me-1"></i> Monthly Milestones</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Date</th>
+            <th>Projected Savings</th>
+            <th>Progress</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for milestone in milestones %}
+          <tr>
+            <td>{{ milestone.month }}</td>
+            <td style="font-size:0.85rem;">{{ milestone.date.strftime('%d %b %Y') }}</td>
+            <td><strong>₹{{ "%.0f"|format(milestone.amount) }}</strong></td>
+            <td style="min-width:120px;">
+              <div class="progress" style="height:8px;">
+                <div class="progress-bar bg-success"
+                  style="width:{{ [milestone.amount / goal.target_amount * 100, 100]|min }}%;"></div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  document.querySelectorAll('.quick-add').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.getElementById('saved_amount').value = this.dataset.amount;
+    });
+  });
+
+  const monthlySlider = document.getElementById('monthlySlider');
+  const reductionSlider = document.getElementById('reductionSlider');
+  const monthlyValue = document.getElementById('monthlyValue');
+  const reductionValue = document.getElementById('reductionValue');
+  const newTime = document.getElementById('newTime');
+  const savingsAlert = document.getElementById('savingsAlert');
+  const timeSaved = document.getElementById('timeSaved');
+
+  function updateSimulator() {
+    const monthly = parseFloat(monthlySlider.value) || 0;
+    const reduction = parseFloat(reductionSlider.value) || 0;
+    monthlyValue.textContent = monthly.toFixed(0);
+    reductionValue.textContent = reduction.toFixed(0);
+
+    fetch('{{ url_for("what_if", id=goal.id) }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({monthly_savings: monthly, spending_reduction: reduction})
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.months && data.months !== Infinity) {
+          newTime.textContent = data.months + ' months (' + data.date + ')';
+          {% if goal.monthly_savings > 0 %}
+          const orig = {{ goal.estimated_months }};
+        if (data.months < orig) {
+          timeSaved.textContent = (orig - data.months).toFixed(1);
+          savingsAlert.style.display = 'block';
+        } else {
+          savingsAlert.style.display = 'none';
+        }
+        {% endif %}
+      } else {
+        newTime.textContent = '—';
+        savingsAlert.style.display = 'none';
+      }
+  });
+}
+
+  monthlySlider.addEventListener('input', updateSimulator);
+  reductionSlider.addEventListener('input', updateSimulator);
+
+  document.querySelectorAll('.apply-suggestion').forEach(btn => {
+    btn.addEventListener('click', function () {
+      reductionSlider.value = parseFloat(this.dataset.reduction);
+      updateSimulator();
+    });
+  });
+
+  updateSimulator();
+</script>
+
+{% endblock %}
