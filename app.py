@@ -1155,7 +1155,13 @@ def edit_expense(id):
         .order_by(Expense.date.desc())
         .all()
     )
-    return render_template("add_expense.html", form=form, edit=True, expenses=expenses)
+    return render_template(
+        "add_expense.html",
+        form=form,
+        edit=True,
+        expenses=expenses,
+        expense_categories=expense_categories,
+    )
 
 
 @app.route("/delete_expense/<int:id>")
