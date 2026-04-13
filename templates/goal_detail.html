@@ -259,8 +259,7 @@
         if (data.months && data.months !== Infinity) {
           newTime.textContent = data.months + ' months (' + data.date + ')';
           {% if goal.monthly_savings > 0 %}
-          const orig = {{goal.estimated_months}
-        };
+          const orig = {{ goal.estimated_months }};
         if (data.months < orig) {
           timeSaved.textContent = (orig - data.months).toFixed(1);
           savingsAlert.style.display = 'block';
