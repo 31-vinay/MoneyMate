@@ -140,9 +140,15 @@
           </a>
           {% endfor %}
           <a href="{{ url_for('add_expense') }}"
-            class="btn btn-sm rounded-pill {% if not _fd %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+            class="btn btn-sm rounded-pill {% if not _fd and not only_uncategorized %}btn-primary{% else %}btn-outline-secondary{% endif %}"
             style="font-size:0.76rem;padding:2px 10px;">
             All
+          </a>
+          {% set _unc_total = expenses | selectattr('category', 'equalto', 'Uncategorized') | list | length if not only_uncategorized else expenses | length %}
+          <a href="{{ url_for('add_expense', uncategorized=1) }}"
+            class="btn btn-sm rounded-pill {% if only_uncategorized %}btn-warning{% else %}btn-outline-warning{% endif %}"
+            style="font-size:0.76rem;padding:2px 10px;">
+            <i class="bi bi-tag me-1"></i>Uncategorized{% if not only_uncategorized and _unc_total > 0 %} ({{ _unc_total }}){% endif %}
           </a>
           <form method="get" action="{{ url_for('add_expense') }}" class="d-flex align-items-center gap-1 ms-auto">
             <input type="number" name="days" min="1" max="365" value="{{ exp_filter_days or '' }}" placeholder="Days…"

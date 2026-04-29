@@ -1042,6 +1042,8 @@ def add_expense():
     except (ValueError, TypeError):
         exp_filter_days = None
 
+    only_uncategorized = request.args.get("uncategorized") == "1"
+
     expense_query = Expense.query.filter_by(user_id=current_user.id)
     if exp_filter_days:
         since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
@@ -1054,6 +1056,10 @@ def add_expense():
     else:
         exp_filter_label = "All Time"
 
+    if only_uncategorized:
+        expense_query = expense_query.filter(Expense.category == "Uncategorized")
+        exp_filter_label = "Uncategorized"
+
     expenses = expense_query.order_by(Expense.date.desc()).all()
     return render_template(
         "add_expense.html",
@@ -1062,6 +1068,7 @@ def add_expense():
         expenses=expenses,
         exp_filter_days=exp_filter_days,
         exp_filter_label=exp_filter_label,
+        only_uncategorized=only_uncategorized,
         expense_categories=expense_categories,
     )
 
@@ -1160,6 +1167,7 @@ def edit_expense(id):
         form=form,
         edit=True,
         expenses=expenses,
+        only_uncategorized=False,
         expense_categories=expense_categories,
     )
 
