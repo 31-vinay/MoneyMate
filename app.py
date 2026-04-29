@@ -96,7 +96,7 @@ class _StripCookieVary:
 
 
 app = Flask(__name__)
-app.wsgi_app = _StripCookieVary(ProxyFix(app.wsgi_app, x_proto=1, x_host=1))
+app.wsgi_app = _StripCookieVary(ProxyFix(app.wsgi_app, x_proto=1, x_host=1))  # ty:ignore[invalid-assignment]
 
 app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "change-me-in-production")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///finance.db"
