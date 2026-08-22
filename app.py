@@ -58,6 +58,7 @@ from charts import (
 from helpers import (
     detect_subscriptions,
     get_spending_suggestions,
+    get_expenses_for_month,
     run_monthly_reset,
     check_subscription_expiry,
 )
@@ -580,11 +581,7 @@ def dashboard():
         )
     selected_month_label = datetime(view_year, view_month, 1).strftime("%B %Y")
 
-    expenses = Expense.query.filter(
-        Expense.user_id == current_user.id,
-        Expense.date >= month_start,
-        Expense.date < month_end,
-    ).all()
+    expenses = get_expenses_for_month(current_user.id, month_start, month_end)
     total_spent = sum(e.amount for e in expenses)
     essential_spent = sum(e.amount for e in expenses if e.is_essential)
     non_essential_spent = total_spent - essential_spent

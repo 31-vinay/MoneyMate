@@ -1,7 +1,61 @@
+import calendar
+import copy
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func
+
+
+def get_expenses_for_month(user_id, month_start, month_end):
+    """Return recorded expenses plus any missing active subscription occurrence."""
+    from models import Expense
+
+    expenses = Expense.query.filter(
+        Expense.user_id == user_id,
+        Expense.date >= month_start,
+        Expense.date < month_end,
+    ).all()
+
+    subscriptions = Expense.query.filter(
+        Expense.user_id == user_id,
+        Expense.is_subscription == True,
+    ).all()
+    series = defaultdict(list)
+    for expense in subscriptions:
+        key = (
+            expense.category.strip().lower(),
+            expense.description.strip().lower() if expense.description else "",
+            expense.sub_start_date,
+            expense.sub_end_date,
+        )
+        series[key].append(expense)
+
+    month_days = calendar.monthrange(month_start.year, month_start.month)[1]
+    for records in series.values():
+        latest = max(records, key=lambda expense: (expense.date, expense.id))
+        start_date = latest.sub_start_date or latest.date
+        end_date = latest.sub_end_date
+        if start_date >= month_end or (end_date and end_date < month_start):
+            continue
+
+        has_recorded_occurrence = any(
+            month_start <= expense.date < month_end for expense in records
+        )
+        if has_recorded_occurrence:
+            continue
+
+        occurrence = copy.copy(latest)
+        occurrence_date = datetime(
+            month_start.year,
+            month_start.month,
+            min(start_date.day, month_days),
+        )
+        if end_date and occurrence_date > end_date:
+            occurrence_date = end_date
+        occurrence.date = occurrence_date
+        expenses.append(occurrence)
+
+    return expenses
 
 
 def detect_subscriptions(user_id, months_back=3):
@@ -184,6 +238,12 @@ def run_monthly_reset(user):
         Expense.is_subscription == True,
     ).all()
     for exp in recurring_expenses:
+        if exp.sub_start_date and new_month_start < exp.sub_start_date.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        ):
+            continue
+        if exp.sub_end_date and new_month_start > exp.sub_end_date:
+            continue
         db.session.add(
             Expense(
                 user_id=user.id,
