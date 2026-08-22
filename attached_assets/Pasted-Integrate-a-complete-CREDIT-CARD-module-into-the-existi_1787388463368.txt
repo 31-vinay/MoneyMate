@@ -1,0 +1,935 @@
+Integrate a complete CREDIT CARD module into the existing MoneyMate application.
+
+IMPORTANT:
+- Inspect the current project structure before making changes.
+- Do not redesign the existing dashboard, expense page, analytics, authentication, or navigation.
+- Follow the same existing color scheme, cards, fonts, spacing, and responsive design.
+- Integrate credit-card data into the existing MoneyMate calculations without creating duplicate expenses.
+- There must be no ambiguity between:
+  1. individual credit-card purchases,
+  2. credit-card statement/billing-cycle totals,
+  3. bank-account credit-card bill payments.
+
+==================================================
+1. ADD A SEPARATE CREDIT CARD SECTION
+==================================================
+
+Add a new sidebar/navigation section:
+
+"CREDIT CARDS"
+
+Inside it, provide:
+
++ Add Credit Card
+
+When adding a card, ask for:
+
+- Card Name
+  Example: HDFC Millennia
+
+- Card Issuer / Bank
+  Example: HDFC Bank
+
+- Last 4 digits only
+  Example: 4582
+
+- Credit Limit
+  Example: ₹1,00,000
+
+- Billing Cycle Start Date / Day
+
+- Statement Generation / Billing Date
+  Example: 5th of every month
+
+- Payment Due Date
+  Example: 25th of every month
+
+- Current Outstanding Amount
+  Optional
+
+Do NOT ask for:
+- full card number
+- CVV
+- PIN
+- OTP
+
+==================================================
+2. CREDIT CARD TRANSACTION IMPORT
+==================================================
+
+Allow the user to upload a CREDIT CARD STATEMENT separately.
+
+Add:
+
+Statement Type:
+- Bank Statement
+- Credit Card Statement
+
+When Credit Card Statement is selected:
+
+Parse individual transactions such as:
+
+Date
+Description / Merchant
+Amount
+Transaction Type
+
+Example:
+
+12 Aug | Swiggy | ₹650
+14 Aug | Zara | ₹2,400
+17 Aug | BookMyShow | ₹900
+20 Aug | Medical Store | ₹1,200
+
+Convert all imported credit-card transactions into the existing common MoneyMate transaction structure.
+
+Each transaction must store:
+
+- transaction_id
+- user_id
+- credit_card_id
+- date
+- description
+- merchant
+- amount
+- master_category
+- need_want_type
+- source_type
+- billing_cycle_id
+- statement_id
+
+source_type must be:
+
+CREDIT_CARD
+
+==================================================
+3. NEEDS VS WANTS CLASSIFICATION
+==================================================
+
+Credit-card transactions must be classified individually.
+
+For this prototype use this rule:
+
+WANTS:
+- Food / Dining / Restaurants
+- Shopping
+- Entertainment
+
+NEEDS:
+- All other mapped essential categories
+
+Examples:
+
+Swiggy → Food → WANT
+Zara → Shopping → WANT
+BookMyShow → Entertainment → WANT
+
+Medical Store → Healthcare → NEED
+Fuel → Transport → NEED
+Electricity → Utilities → NEED
+
+Keep this rule centralized so it can be modified later.
+
+Do NOT classify the complete credit-card bill itself as Need or Want.
+
+Classification applies to the individual transactions only.
+
+==================================================
+4. MASTER EXPENSE CATEGORY INTEGRATION
+==================================================
+
+Credit-card transactions must appear in the existing Expense page.
+
+Do NOT create a second separate expense list.
+
+Merge them into the existing MASTER EXPENSE view.
+
+Example:
+
+Food
+₹650
+Source: Credit Card • HDFC Millennia
+
+Shopping
+₹2,400
+Source: Credit Card • HDFC Millennia
+
+Healthcare
+₹1,200
+Source: Credit Card • HDFC Millennia
+
+Add a small source label/badge:
+
+Credit Card
+
+or:
+
+HDFC Millennia ••••4582
+
+The existing Expense page should therefore contain:
+
+Bank / Debit expenses
++
+Manual expenses
++
+Credit-card expenses
+
+in one unified view.
+
+Allow filtering by:
+
+All
+Bank
+Credit Card
+Manual
+
+==================================================
+5. BILLING-CYCLE LOGIC
+==================================================
+
+IMPORTANT ACCOUNTING RULE FOR THIS PROJECT:
+
+The individual credit-card transactions belong to a specific billing cycle.
+
+However, for MoneyMate's monthly financial totals:
+
+The TOTAL credit-card expense should be recognized in the month in which the credit-card STATEMENT / BILLING CYCLE is generated.
+
+Example:
+
+Billing Cycle:
+5 Aug – 4 Sep
+
+Statement Generated:
+5 Sep
+
+Transactions inside cycle:
+
+Food ₹1,000
+Shopping ₹2,000
+Healthcare ₹1,500
+
+Statement Total:
+₹4,500
+
+MoneyMate should:
+
+- keep each individual transaction for category analysis
+- show their categories in the Expense page
+- classify each into Needs/Wants
+- associate all of them with the September billing cycle
+
+For monthly financial totals:
+
+September Credit Card Expense = ₹4,500
+
+Do NOT separately add every transaction plus the bill total.
+
+The statement total is the single financial total for the billing cycle.
+
+The individual transactions are the breakdown of that same ₹4,500.
+
+==================================================
+6. PREVENT DOUBLE COUNTING INSIDE CREDIT CARD DATA
+==================================================
+
+Example:
+
+Credit-card transaction breakdown:
+
+Food ₹1,000
+Shopping ₹2,000
+Healthcare ₹1,500
+
+Total = ₹4,500
+
+Statement amount = ₹4,500
+
+Do NOT calculate:
+
+₹4,500 transactions
++
+₹4,500 statement
+=
+₹9,000
+
+WRONG.
+
+Instead:
+
+Credit Card Expense Total = ₹4,500
+
+Individual transactions are used only to distribute this ₹4,500 across categories.
+
+Therefore:
+
+Food = ₹1,000
+Shopping = ₹2,000
+Healthcare = ₹1,500
+
+Total = ₹4,500
+
+==================================================
+7. CREDIT CARD STATEMENT RECORD
+==================================================
+
+For every billing cycle create:
+
+- billing_cycle_id
+- credit_card_id
+- cycle_start_date
+- cycle_end_date
+- statement_date
+- statement_total
+- due_date
+- amount_paid
+- outstanding
+- payment_status
+
+Payment status:
+
+UNPAID
+PARTIALLY_PAID
+PAID
+OVERDUE
+UNVERIFIED
+
+==================================================
+8. CREDIT CARD DASHBOARD
+==================================================
+
+Inside the Credit Card section show each card.
+
+Example:
+
+HDFC Millennia ••••4582
+
+Credit Limit
+₹1,00,000
+
+Current Cycle Spend
+₹7,200
+
+Last Statement
+₹4,500
+
+Due Date
+25 Sep
+
+Amount Paid
+₹0
+
+Outstanding
+₹4,500
+
+Status
+PAYMENT DUE
+
+Also show:
+
+Category Breakdown
+
+Food ₹1,000
+Shopping ₹2,000
+Healthcare ₹1,500
+
+Needs ₹1,500
+Wants ₹3,000
+
+==================================================
+9. BILL PAYMENT DETECTION FROM BANK STATEMENT
+==================================================
+
+When a BANK STATEMENT is uploaded:
+
+Scan debit transactions for possible credit-card payments.
+
+Use:
+
+- description keywords
+- card issuer
+- transaction amount
+- payment date
+- unpaid credit-card statement amount
+- due-date proximity
+- last four digits when available
+
+Keywords can include variations such as:
+
+credit card
+card payment
+cc payment
+credit card bill
+card bill
+cc bill
+
+Do NOT rely only on keywords.
+
+Cross-check against existing unpaid card statements.
+
+==================================================
+10. STATEMENT TOTAL ↔ BANK PAYMENT MATCHING
+==================================================
+
+Example:
+
+Credit Card Statement:
+
+HDFC Millennia
+Statement Total = ₹4,500
+Due Date = 25 Sep
+Status = UNPAID
+
+Bank Statement:
+
+20 Sep
+HDFC CREDIT CARD PAYMENT
+Debit ₹4,500
+
+System should detect:
+
+Issuer match ✓
+Amount match ✓
+Date near due date ✓
+
+Then link:
+
+Bank Transaction
+↔
+Credit Card Billing Cycle
+
+Set:
+
+payment_status = PAID
+amount_paid = ₹4,500
+outstanding = ₹0
+
+==================================================
+11. BANK PAYMENT MUST NOT BECOME ANOTHER EXPENSE
+==================================================
+
+CRITICAL:
+
+The ₹4,500 credit-card spending has already been recognized through the credit-card billing cycle.
+
+Therefore the bank transaction:
+
+HDFC CREDIT CARD PAYMENT ₹4,500
+
+must be classified as:
+
+CREDIT_CARD_SETTLEMENT
+
+NOT:
+
+EXPENSE
+
+It should reduce bank cash flow, but it must NOT increase:
+
+- Total Expense
+- Needs
+- Wants
+- Category totals
+- Burn Rate
+- Expense charts
+
+again.
+
+==================================================
+12. PAYMENT STATUS ON CREDIT CARD DASHBOARD
+==================================================
+
+After matching the bank payment:
+
+Credit Card Dashboard should immediately show:
+
+HDFC Millennia
+
+Statement: ₹4,500
+Paid: ₹4,500
+Outstanding: ₹0
+
+✓ BILL PAID
+
+Add:
+
+Paid on 20 Sep
+Matched with Bank Statement
+
+==================================================
+13. AMBIGUOUS PAYMENT MATCH
+==================================================
+
+If MoneyMate is not certain:
+
+DO NOT automatically classify.
+
+Example:
+
+Bank statement:
+HDFC BANK
+₹4,500
+
+Possible unpaid card:
+
+HDFC Millennia
+₹4,500
+
+Show:
+
+"Possible Credit Card Payment Detected"
+
+₹4,500 on 20 Sep
+
+Possible match:
+HDFC Millennia ••••4582
+Statement Due: ₹4,500
+
+[Confirm Match]
+[Not a Credit Card Payment]
+
+Only after confirmation should it become:
+
+CREDIT_CARD_SETTLEMENT
+
+==================================================
+14. MANUAL PAID FALLBACK
+==================================================
+
+Inside Credit Card Dashboard include:
+
+"Mark Bill as Paid"
+
+This is only a fallback if:
+- bank statement has not been uploaded
+- payment happened from another account
+- automatic matching failed
+
+Ask:
+
+Payment Amount
+Payment Date
+Payment Source
+
+Then update the same billing-cycle payment record.
+
+Do NOT create another expense.
+
+==================================================
+15. PARTIAL PAYMENT
+==================================================
+
+If:
+
+Statement Amount = ₹10,000
+Bank Payment = ₹6,000
+
+Then:
+
+Amount Paid = ₹6,000
+Outstanding = ₹4,000
+Status = PARTIALLY_PAID
+
+Do not mark fully paid.
+
+==================================================
+16. MONTHLY ANALYTICS
+==================================================
+
+Follow this exact rule:
+
+MONTHLY CREDIT CARD EXPENSE =
+statement amount generated during that month.
+
+Example:
+
+Statement generated:
+5 Sep
+
+Statement Total:
+₹4,500
+
+Therefore:
+
+September credit-card expense = ₹4,500
+
+Individual credit-card transactions provide the category breakdown of this amount.
+
+They must NOT be added again on top of ₹4,500.
+
+==================================================
+17. MAIN DASHBOARD CALCULATIONS
+==================================================
+
+Update the existing dashboard calculations.
+
+Total Expense should include:
+
+Bank / Debit Actual Expenses
++
+Manual Actual Expenses
++
+Credit Card Statement Expenses
+
+Exclude:
+
+Credit Card Settlements
+
+Formula:
+
+total_expense =
+bank_actual_expenses
++
+manual_expenses
++
+credit_card_statement_totals
+-
+excluded_internal_settlements
+
+Do not literally subtract settlements if they were never included.
+Prefer filtering them out before aggregation.
+
+==================================================
+18. NEEDS VS WANTS TOTALS
+==================================================
+
+Needs/Wants for credit cards must come from individual transaction categories.
+
+Example:
+
+Statement total:
+₹4,500
+
+Food ₹1,000 → Want
+Shopping ₹2,000 → Want
+Healthcare ₹1,500 → Need
+
+Therefore:
+
+Credit Card Wants = ₹3,000
+Credit Card Needs = ₹1,500
+
+Total Credit Card Expense = ₹4,500
+
+These must reconcile exactly.
+
+Validation rule:
+
+Need Total + Want Total + Other Valid Categories
+=
+Credit Card Statement Transaction Total
+
+Allow for refunds/fees where required.
+
+==================================================
+19. ALL-TIME EXPENSE PAGE
+==================================================
+
+The existing all-time Expense page must include credit-card transactions.
+
+Example:
+
+DATE       DESCRIPTION     CATEGORY       AMOUNT       SOURCE
+
+12 Aug     Swiggy          Food           ₹650         Credit Card
+14 Aug     Zara            Shopping       ₹2,400       Credit Card
+20 Aug     Apollo Pharmacy Healthcare     ₹1,200       Credit Card
+22 Aug     Electricity     Utilities      ₹1,800       Bank
+
+Do not create duplicate rows for the statement total.
+
+The statement total is a summary record.
+
+The individual purchases remain the detailed expense records.
+
+==================================================
+20. SOURCE IDENTIFICATION
+==================================================
+
+Every expense must have:
+
+source_type
+
+Possible values:
+
+BANK
+CREDIT_CARD
+MANUAL
+RECURRING
+
+For credit-card transactions also store:
+
+credit_card_id
+billing_cycle_id
+
+Display the source subtly in the Expense page.
+
+==================================================
+21. REFUNDS
+==================================================
+
+Credit-card refunds must reduce credit-card spending.
+
+They must NOT be classified as Income.
+
+Example:
+
+Shopping purchase ₹2,000
+Refund ₹2,000
+
+Net expense contribution = ₹0
+
+==================================================
+22. FEES / INTEREST
+==================================================
+
+If the credit-card statement contains:
+
+Late Fee
+Annual Fee
+Interest
+
+These may contribute to statement total.
+
+Create suitable financial categories:
+
+Credit Card Fee
+Interest / Finance Charge
+
+Do not classify them as purchases.
+
+Ensure the category breakdown still reconciles with the statement total.
+
+==================================================
+23. BILL REMINDERS
+==================================================
+
+Use the stored due date.
+
+If unpaid:
+
+7 days before:
+"Your HDFC Millennia bill of ₹4,500 is due in 7 days."
+
+3 days before:
+"Your credit-card bill is due in 3 days."
+
+1 day before:
+"Your credit-card bill is due tomorrow."
+
+Due date:
+"Your HDFC Millennia bill of ₹4,500 is due today."
+
+If paid:
+
+Stop all reminders for that billing cycle.
+
+==================================================
+24. OVERDUE
+==================================================
+
+If:
+
+current_date > due_date
+
+AND
+
+outstanding > 0
+
+Set:
+
+OVERDUE
+
+Display the outstanding bill in the Credit Card Dashboard.
+
+Do NOT add it again to the next month's expense.
+
+The expense has already been recognized through its original billing cycle.
+
+==================================================
+25. NO CARRY-FORWARD DUPLICATION
+==================================================
+
+A statement amount may remain unpaid across months.
+
+Its PAYMENT OBLIGATION may carry forward.
+
+Its EXPENSE must not.
+
+Example:
+
+September Statement:
+₹4,500
+
+Not paid until October.
+
+September:
+Expense = ₹4,500
+
+October:
+Outstanding obligation = ₹4,500
+
+October expense from this old bill = ₹0
+
+When paid in October:
+
+Bank settlement = ₹4,500
+Expense addition = ₹0
+
+==================================================
+26. CREDIT LIMIT
+==================================================
+
+Show separately:
+
+Credit Limit
+Current Card Balance
+Available Credit
+Statement Amount
+Outstanding Bill
+
+Do not mix these values.
+
+==================================================
+27. DATA VALIDATION / NO AMBIGUITY
+==================================================
+
+Before saving any billing cycle verify:
+
+sum(individual card transactions)
++
+valid fees
+-
+refunds
+≈
+statement total
+
+If they do not match:
+
+Show:
+
+"Statement reconciliation difference detected"
+
+Do NOT silently alter the values.
+
+Store:
+
+calculated_total
+official_statement_total
+difference
+
+Allow the user to inspect the mismatch.
+
+==================================================
+28. TEST ALL IMPORTANT CASES
+==================================================
+
+TEST 1:
+Credit Card Statement ₹4,500 imported.
+
+Expected:
+Expense = ₹4,500 once.
+
+TEST 2:
+Individual categories sum to ₹4,500.
+
+Expected:
+Needs/Wants analysis reconciles to statement total.
+
+TEST 3:
+Bank statement later contains ₹4,500 card payment.
+
+Expected:
+Bill becomes PAID.
+Expense does NOT increase.
+
+TEST 4:
+Card bill payment happens next month.
+
+Expected:
+No carry-forward duplication.
+
+TEST 5:
+Partial payment.
+
+Expected:
+Outstanding correctly calculated.
+
+TEST 6:
+No bank statement uploaded.
+
+Expected:
+Bill remains Unverified / Unpaid.
+Manual Paid fallback works.
+
+TEST 7:
+Ambiguous bank transaction.
+
+Expected:
+User confirmation required.
+
+TEST 8:
+Duplicate credit-card statement uploaded.
+
+Expected:
+No duplicate transactions.
+
+TEST 9:
+Refund transaction.
+
+Expected:
+Refund offsets card spending and is not Income.
+
+TEST 10:
+Existing Expense page.
+
+Expected:
+Credit-card purchases appear inside master expense categories with a Credit Card source badge.
+
+TEST 11:
+Existing dashboard.
+
+Expected:
+Income, Expense, Savings, Burn Rate, Needs/Wants and charts remain mathematically consistent.
+
+TEST 12:
+Page reload / user relogin.
+
+Expected:
+Card data, statement cycles, payment matches and category labels persist correctly.
+
+==================================================
+FINAL REQUIREMENT
+==================================================
+
+Do not implement this using static/mock values.
+
+Implement the full flow:
+
+Credit Card Setup
+→ Credit Card Statement Import
+→ Individual Transaction Extraction
+→ Category Mapping
+→ Needs/Wants
+→ Billing Cycle Creation
+→ Statement Total Reconciliation
+→ Monthly Expense Integration
+→ Bank Statement Payment Detection
+→ Settlement Matching
+→ Bill Paid Status
+→ Master Expense Integration
+→ Dashboard Recalculation
+
+Use one source of truth for each billing cycle.
+
+At no point should:
+
+credit-card purchase breakdown
++
+statement amount
++
+bank bill payment
+
+be counted as three expenses.
+
+They represent different views/stages of the same financial activity.

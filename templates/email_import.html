@@ -686,6 +686,7 @@
         </div>
         <div id="bImportSuccess" class="alert alert-success d-none"></div>
         <div id="bImportError" class="alert alert-danger  d-none"></div>
+        <div id="bPaymentMatches" class="alert alert-warning d-none"></div>
         <div class="table-responsive">
           <table class="txn-table" id="bTxnTable">
             <thead>
@@ -1104,6 +1105,7 @@
             </span>
           </span>`;
         successEl.classList.remove('d-none');
+        renderPaymentMatches(data.possible_payments || []);
         document.querySelectorAll('.txn-check:checked').forEach(cb => cb.closest('tr').remove());
         updateCount();
       } else {
@@ -1116,6 +1118,74 @@
     }
     spin.classList.add('d-none');
     btn.disabled = false;
+  }
+
+  function renderPaymentMatches(matches) {
+    const el = document.getElementById('bPaymentMatches');
+    if (!matches.length) {
+      el.classList.add('d-none');
+      return;
+    }
+    el.innerHTML = '<strong><i class="bi bi-exclamation-triangle me-1"></i>Possible Credit Card Payment Detected</strong>' +
+      '<div class="small mt-2">These bank debits were held for confirmation so they are not accidentally counted as new expenses.</div>' +
+      matches.map((item, index) => {
+        const t = item.transaction;
+        const candidate = item.matches[0];
+        if (!candidate) return '';
+        return `<div class="border rounded-3 p-2 mt-2">
+          <div><strong>₹${Number(t.amount).toFixed(2)}</strong> on ${escHtml(t.date)} — ${escHtml(t.description)}</div>
+          <div class="small mt-1">Possible match: <strong>${escHtml(candidate.card_name)}</strong>,
+            outstanding ₹${Number(candidate.outstanding).toFixed(2)}</div>
+          <div class="mt-2 d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-success" onclick="confirmPayment(${index})">
+              <i class="bi bi-check-circle me-1"></i>Confirm Match
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="keepPaymentAsExpense(${index})">
+              Not a Card Payment
+            </button>
+          </div>
+        </div>`;
+      }).join('');
+    el.dataset.matches = JSON.stringify(matches);
+    el.classList.remove('d-none');
+  }
+
+  async function confirmPayment(index) {
+    const el = document.getElementById('bPaymentMatches');
+    const matches = JSON.parse(el.dataset.matches || '[]');
+    const item = matches[index];
+    if (!item || !item.matches.length) return;
+    const res = await fetch('/bank-statement/confirm-payment', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({transaction: item.transaction, statement_id: item.matches[0].statement_id}),
+    });
+    const data = await res.json();
+    if (data.success) {
+      const blocks = el.querySelectorAll('.border');
+      if (blocks[index]) blocks[index].innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>' + escHtml(data.message) + '</span>';
+    } else {
+      alert(data.message || 'Could not confirm this payment.');
+    }
+  }
+
+  async function keepPaymentAsExpense(index) {
+    const el = document.getElementById('bPaymentMatches');
+    const blocks = el.querySelectorAll('.border');
+    const matches = JSON.parse(el.dataset.matches || '[]');
+    const item = matches[index];
+    if (!item) return;
+    const res = await fetch('/bank-statement/import-regular', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({transaction: item.transaction}),
+    });
+    const data = await res.json();
+    if (blocks[index]) {
+      blocks[index].innerHTML = data.success
+        ? '<span class="text-success"><i class="bi bi-check-circle me-1"></i>' + escHtml(data.message) + '</span>'
+        : '<span class="text-danger">' + escHtml(data.message || 'Could not import this expense.') + '</span>';
+    }
   }
 
   // ═══════════════════════════════════════════════════════════

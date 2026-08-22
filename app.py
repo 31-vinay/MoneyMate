@@ -1,4 +1,5 @@
 import io
+import hashlib
 import os
 import re
 import ssl
@@ -663,15 +664,23 @@ def dashboard():
             .scalar()
             or 0
         )
-        previous_month_expenses = (
-            db.session.query(func.sum(Expense.amount))
-            .filter(
-                Expense.user_id == current_user.id,
-                Expense.date >= previous_month_start,
-                Expense.date < month_start,
-            )
-            .scalar()
-            or 0
+        previous_regular_expenses = Expense.query.filter(
+            Expense.user_id == current_user.id,
+            Expense.date >= previous_month_start,
+            Expense.date < month_start,
+        ).all()
+        previous_month_expenses = sum(
+            expense.amount
+            for expense in previous_regular_expenses
+            if expense.source_type != "CREDIT_CARD" and not expense.is_settlement
+        )
+        previous_month_card_statements = CreditCardStatement.query.filter(
+            CreditCardStatement.user_id == current_user.id,
+            CreditCardStatement.statement_date >= previous_month_start,
+            CreditCardStatement.statement_date < month_start,
+        ).all()
+        previous_month_expenses += sum(
+            statement.statement_total for statement in previous_month_card_statements
         )
         previous_month_balance = round(
             max(0, previous_month_income - previous_month_expenses), 2
@@ -2184,6 +2193,7 @@ def bank_statement_import():
     items = request.get_json(force=True).get("transactions", [])
     imported_count = 0
     skipped_count = 0
+    possible_payments = []
     for txn in items:
         try:
             txn_date = datetime.strptime(txn["date"], "%Y-%m-%d")
@@ -2210,6 +2220,32 @@ def bank_statement_import():
                     )
                 )
             else:
+                matches = possible_card_payment_matches(
+                    current_user.id, desc, amount, txn_date
+                )
+                if matches:
+                    possible_payments.append(
+                        {
+                            "transaction": {
+                                "date": txn_date.strftime("%Y-%m-%d"),
+                                "description": desc,
+                                "amount": round(amount, 2),
+                                "type": "expense",
+                            },
+                            "matches": [
+                                {
+                                    "statement_id": match["statement"].id,
+                                    "card_name": match["statement"].credit_card.masked_name,
+                                    "statement_total": match["statement"].statement_total,
+                                    "outstanding": match["statement"].outstanding,
+                                    "due_date": match["statement"].due_date.strftime("%Y-%m-%d"),
+                                    "confidence": match["confidence"],
+                                }
+                                for match in matches[:3]
+                            ],
+                        }
+                    )
+                    continue
                 if Expense.query.filter_by(
                     user_id=current_user.id,
                     amount=amount,
@@ -2236,8 +2272,119 @@ def bank_statement_import():
             continue
     db.session.commit()
     return jsonify(
-        {"success": True, "imported": imported_count, "skipped": skipped_count}
+        {
+            "success": True,
+            "imported": imported_count,
+            "skipped": skipped_count,
+            "possible_payments": possible_payments,
+        }
     )
+
+
+@app.route("/bank-statement/confirm-payment", methods=["POST"])
+@login_required
+def bank_statement_confirm_payment():
+    payload = request.get_json(force=True)
+    txn = payload.get("transaction") or {}
+    try:
+        statement_id = int(payload.get("statement_id"))
+        txn_date = datetime.strptime(txn["date"], "%Y-%m-%d")
+        amount = round(float(txn["amount"]), 2)
+        description = (txn.get("description") or "Credit card payment").strip()[:200]
+        if amount <= 0:
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"success": False, "message": "Invalid payment confirmation."}), 400
+
+    statement = db.session.get(CreditCardStatement, statement_id)
+    if not statement or statement.user_id != current_user.id:
+        return jsonify({"success": False, "message": "Statement not found."}), 404
+    if amount > round(statement.outstanding or 0, 2) + 0.01:
+        return jsonify(
+            {"success": False, "message": "Payment exceeds the statement outstanding amount."}
+        ), 400
+
+    transaction_id = "settlement:" + hashlib.sha256(
+        f"{current_user.id}|{txn_date.date()}|{description.lower()}|{amount:.2f}|{statement.id}".encode()
+    ).hexdigest()[:48]
+    if not Expense.query.filter_by(
+        user_id=current_user.id, transaction_id=transaction_id
+    ).first():
+        db.session.add(
+            Expense(
+                user_id=current_user.id,
+                category="Credit Card Settlement",
+                amount=amount,
+                date=txn_date,
+                description=description,
+                merchant=description,
+                source_type="BANK",
+                credit_card_id=statement.credit_card_id,
+                billing_cycle_id=statement.billing_cycle_id,
+                statement_id=statement.id,
+                transaction_id=transaction_id,
+                is_essential=False,
+                is_settlement=True,
+            )
+        )
+        statement.amount_paid = round((statement.amount_paid or 0) + amount, 2)
+        statement.payment_date = txn_date
+        statement.payment_source = "Bank statement"
+        refresh_statement_status(statement)
+        statement.credit_card.current_outstanding = max(
+            0.0, round(statement.credit_card.current_outstanding - amount, 2)
+        )
+        db.session.commit()
+    return jsonify(
+        {
+            "success": True,
+            "message": "Credit-card payment matched. It will not be counted as another expense.",
+            "statement_id": statement.id,
+            "payment_status": statement.payment_status,
+            "outstanding": statement.outstanding,
+        }
+    )
+
+
+@app.route("/bank-statement/import-regular", methods=["POST"])
+@login_required
+def bank_statement_import_regular():
+    payload = request.get_json(force=True)
+    txn = payload.get("transaction") or {}
+    try:
+        txn_date = datetime.strptime(txn["date"], "%Y-%m-%d")
+        amount = round(float(txn["amount"]), 2)
+        description = (txn.get("description") or "Bank transaction").strip()[:200]
+        if amount <= 0:
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"success": False, "message": "Invalid bank transaction."}), 400
+
+    duplicate = Expense.query.filter_by(
+        user_id=current_user.id,
+        amount=amount,
+        date=txn_date,
+        description=description,
+    ).first()
+    if duplicate:
+        return jsonify({"success": True, "message": "This bank transaction already exists."})
+
+    category, essential, subscription = auto_categorize_transaction(description)
+    db.session.add(
+        Expense(
+            user_id=current_user.id,
+            category=category,
+            amount=amount,
+            date=txn_date,
+            description=description,
+            merchant=description,
+            is_essential=essential,
+            is_subscription=subscription,
+            source_type="BANK",
+        )
+    )
+    db.session.commit()
+    return jsonify({"success": True, "message": "Bank expense imported."})
 
 
 @app.route("/retro_categorize", methods=["POST"])

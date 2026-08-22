@@ -233,6 +233,12 @@
                 <td>
                   {% if exp.category == 'Uncategorized' %}
                   <span class="badge badge-uncategorized" style="background:rgba(253,203,110,0.2);">Pending</span>
+                  {% elif exp.is_settlement %}
+                  <span class="badge bg-secondary">Card settlement</span>
+                  {% elif exp.source_type == 'CREDIT_CARD' %}
+                  <span class="badge bg-info text-dark">Credit Card{% if exp.credit_card %} · {{ exp.credit_card.name }}{% endif %}</span>
+                  {% elif exp.source_type == 'BANK' %}
+                  <span class="badge bg-light text-dark border">Bank</span>
                   {% else %}
                   <span class="badge {% if exp.is_essential %}bg-success{% else %}bg-warning{% endif %}">
                     {% if exp.is_essential %}Need{% else %}Want{% endif %}
