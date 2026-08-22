@@ -142,11 +142,7 @@
       <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
       <div class="stat-label">Total Income</div>
       <div class="stat-value" data-countup="{{ " %.0f"|format(total_income) }}">₹0</div>
-      {% if previous_month_balance > 0 %}
-      <div class="stat-sub">Includes ₹{{ "%.0f"|format(previous_month_balance) }} carried from last month</div>
-      {% else %}
-      <div class="stat-sub">This month</div>
-      {% endif %}
+      <div class="stat-sub">This month · ₹{{ "%.0f"|format(previous_month_balance) }} carried from last month</div>
       <div class="stat-bg-icon"><i class="bi bi-cash-stack"></i></div>
     </div>
   </div>

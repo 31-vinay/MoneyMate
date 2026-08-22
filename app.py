@@ -538,7 +538,10 @@ def dashboard():
     if was_reset:
         msg = "A new month has started! Your dashboard has been reset. Subscriptions and recurring income are preserved."
         if net_leftover > 0:
-            msg += f" ₹{net_leftover:,.2f} net surplus was added to your savings."
+            msg += (
+                f" ₹{net_leftover:,.2f} from last month's remaining balance "
+                "was added to this month's total income and savings."
+            )
         if goals_funded_reset > 0:
             msg += f" ₹{goals_funded_reset:,.2f} was allocated to your goals from your Wants budget."
         flash(msg, "info")
