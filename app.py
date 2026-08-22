@@ -61,6 +61,8 @@ from helpers import (
     get_expenses_for_month,
     run_monthly_reset,
     check_subscription_expiry,
+    assign_goal_priority,
+    normalize_goal_priorities,
 )
 from parsers import parse_bank_statement, scan_imap_emails, IMAP_PRESETS
 
@@ -661,6 +663,13 @@ def dashboard():
         .order_by(Goal.created_at.desc())
         .all()
     )
+    if normalize_goal_priorities(current_user.id):
+        db.session.commit()
+        goals = (
+            Goal.query.filter_by(user_id=current_user.id)
+            .order_by(Goal.created_at.desc())
+            .all()
+        )
 
     monthly_spending = defaultdict(float)
     for exp in expenses:
@@ -1277,6 +1286,8 @@ def remove_expired_subscription(id):
 @app.route("/goals")
 @login_required
 def goals():
+    if normalize_goal_priorities(current_user.id):
+        db.session.commit()
     goals = (
         Goal.query.filter_by(user_id=current_user.id)
         .order_by(Goal.created_at.desc())
@@ -1290,16 +1301,15 @@ def goals():
 def add_goal():
     form = GoalForm()
     if form.validate_on_submit():
-        db.session.add(
-            Goal(
-                user_id=current_user.id,
-                name=form.name.data,
-                target_amount=form.target_amount.data,
-                monthly_savings=form.monthly_savings.data,
-                target_date=form.target_date.data,
-                priority=form.priority.data,
-            )
+        new_goal = Goal(
+            user_id=current_user.id,
+            name=form.name.data,
+            target_amount=form.target_amount.data,
+            monthly_savings=form.monthly_savings.data,
+            target_date=form.target_date.data,
         )
+        db.session.add(new_goal)
+        assign_goal_priority(current_user.id, new_goal, form.priority.data)
         db.session.commit()
         flash("Goal created successfully!", "success")
         return redirect(url_for("goals"))
@@ -1324,7 +1334,7 @@ def edit_goal(id):
         goal.target_amount = form.target_amount.data
         goal.monthly_savings = form.monthly_savings.data
         goal.target_date = form.target_date.data
-        goal.priority = form.priority.data
+        assign_goal_priority(current_user.id, goal, form.priority.data)
         db.session.commit()
         flash("Goal updated successfully!", "success")
         return redirect(url_for("goal_detail", id=goal.id))

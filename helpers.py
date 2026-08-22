@@ -64,9 +64,15 @@ def detect_subscriptions(user_id, months_back=3):
     since_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
         days=30 * months_back
     )
-    expenses = Expense.query.filter(
+    recent_expenses = Expense.query.filter(
         Expense.user_id == user_id, Expense.date >= since_date
     ).all()
+    explicit_subscriptions = Expense.query.filter(
+        Expense.user_id == user_id, Expense.is_subscription == True
+    ).all()
+    expenses = list(
+        {expense.id: expense for expense in recent_expenses + explicit_subscriptions}.values()
+    )
 
     groups = defaultdict(list)
     for exp in expenses:
@@ -297,10 +303,81 @@ def run_monthly_reset(user):
     net_leftover = round(
         max(0.0, prev_income_total - prev_expense_total - goals_funded), 2
     )
+    if net_leftover > 0:
+        db.session.add(
+            Income(
+                user_id=user.id,
+                source="Previous Month Balance",
+                amount=net_leftover,
+                date_received=new_month_start,
+                description="Net balance carried forward from the previous month",
+                is_recurring=False,
+            )
+        )
     user.savings_balance = round((user.savings_balance or 0.0) + net_leftover, 2)
 
     db.session.commit()
     return True, net_leftover, round(goals_funded, 2)
+
+
+def assign_goal_priority(user_id, goal, requested_priority):
+    """Assign a unique priority to a user's goal, shifting other goals down."""
+    from models import Goal
+
+    try:
+        requested = max(1, int(requested_priority))
+    except (TypeError, ValueError):
+        requested = 1
+
+    other_goals = (
+        Goal.query.filter(Goal.user_id == user_id, Goal.id != goal.id)
+        .order_by(Goal.created_at.asc(), Goal.id.asc())
+        .all()
+    )
+
+    def priority_number(item):
+        try:
+            return max(1, int(item.priority))
+        except (TypeError, ValueError):
+            return 999
+
+    # Repair any legacy duplicates first while preserving their relative order.
+    used = set()
+    for other in sorted(other_goals, key=lambda item: (priority_number(item), item.id)):
+        priority = priority_number(other)
+        while priority in used:
+            priority += 1
+        other.priority = str(priority)
+        used.add(priority)
+
+    for other in sorted(other_goals, key=lambda item: int(item.priority)):
+        if int(other.priority) >= requested:
+            other.priority = str(int(other.priority) + 1)
+
+    goal.priority = str(requested)
+
+
+def normalize_goal_priorities(user_id):
+    """Repair duplicate or legacy priorities while preserving their order."""
+    from models import Goal
+
+    goals = Goal.query.filter_by(user_id=user_id).all()
+
+    def priority_number(item):
+        try:
+            return max(1, int(item.priority))
+        except (TypeError, ValueError):
+            return 999
+
+    changed = False
+    for index, item in enumerate(
+        sorted(goals, key=lambda goal: (priority_number(goal), goal.id)), start=1
+    ):
+        priority = str(index)
+        if item.priority != priority:
+            item.priority = priority
+            changed = True
+    return changed
 
 
 def check_subscription_expiry(user_id):
