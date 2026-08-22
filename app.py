@@ -601,6 +601,9 @@ def dashboard():
         Income.date_received < month_end,
     ).all()
     total_income = sum(i.amount for i in incomes)
+    previous_month_balance = sum(
+        i.amount for i in incomes if i.source == "Previous Month Balance"
+    )
     source_breakdown = {}
     for inc in incomes:
         source_breakdown[inc.source] = source_breakdown.get(inc.source, 0) + inc.amount
@@ -752,6 +755,7 @@ def dashboard():
         "dashboard.html",
         now=now,
         total_income=total_income,
+        previous_month_balance=previous_month_balance,
         total_spent=total_spent,
         burn_rate=burn_rate,
         source_breakdown=source_breakdown,
