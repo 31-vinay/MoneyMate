@@ -180,7 +180,7 @@ def load_user(user_id):
 def create_admin():
     admin_user = User.query.filter_by(username="admin").first()
     if not admin_user:
-        admin_password = os.environ.get("vinay3112")
+        admin_password = os.environ.get("ADMIN_PASSWORD")
         if not admin_password:
             return "ADMIN_PASSWORD environment variable is not set.", 500
         admin_user = User(username="admin", email="admin@example.com")
