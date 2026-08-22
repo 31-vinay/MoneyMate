@@ -603,13 +603,52 @@ def dashboard():
         Income.date_received >= month_start,
         Income.date_received < month_end,
     ).all()
-    total_income = sum(i.amount for i in incomes)
+    recorded_income = sum(i.amount for i in incomes)
+    has_explicit_carry = any(
+        i.source == "Previous Month Balance" for i in incomes
+    )
     previous_month_balance = sum(
         i.amount for i in incomes if i.source == "Previous Month Balance"
+    )
+    if not has_explicit_carry:
+        previous_month_start = (
+            datetime(view_year - 1, 12, 1)
+            if view_month == 1
+            else datetime(view_year, view_month - 1, 1)
+        )
+        previous_month_income = (
+            db.session.query(func.sum(Income.amount))
+            .filter(
+                Income.user_id == current_user.id,
+                Income.date_received >= previous_month_start,
+                Income.date_received < month_start,
+            )
+            .scalar()
+            or 0
+        )
+        previous_month_expenses = (
+            db.session.query(func.sum(Expense.amount))
+            .filter(
+                Expense.user_id == current_user.id,
+                Expense.date >= previous_month_start,
+                Expense.date < month_start,
+            )
+            .scalar()
+            or 0
+        )
+        previous_month_balance = round(
+            max(0, previous_month_income - previous_month_expenses), 2
+        )
+    total_income = recorded_income + (
+        previous_month_balance
+        if not has_explicit_carry
+        else 0
     )
     source_breakdown = {}
     for inc in incomes:
         source_breakdown[inc.source] = source_breakdown.get(inc.source, 0) + inc.amount
+    if previous_month_balance > 0 and "Previous Month Balance" not in source_breakdown:
+        source_breakdown["Previous Month Balance"] = previous_month_balance
     source_percentages = {
         src: (amt / total_income * 100) if total_income else 0
         for src, amt in source_breakdown.items()
