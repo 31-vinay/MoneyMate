@@ -61,6 +61,7 @@ def get_expenses_for_month(user_id, month_start, month_end):
 def detect_subscriptions(user_id, months_back=3):
     from models import Expense
 
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     since_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
         days=30 * months_back
     )
@@ -68,7 +69,10 @@ def detect_subscriptions(user_id, months_back=3):
         Expense.user_id == user_id, Expense.date >= since_date
     ).all()
     explicit_subscriptions = Expense.query.filter(
-        Expense.user_id == user_id, Expense.is_subscription == True
+        Expense.user_id == user_id,
+        Expense.is_subscription == True,
+        (Expense.sub_start_date == None) | (Expense.sub_start_date <= now),
+        (Expense.sub_end_date == None) | (Expense.sub_end_date >= now),
     ).all()
     expenses = list(
         {expense.id: expense for expense in recent_expenses + explicit_subscriptions}.values()
