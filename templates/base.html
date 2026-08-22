@@ -37,6 +37,7 @@
   'edit_income': 'Edit Income',
   'add_expense': 'Expenses',
   'edit_expense': 'Edit Expense',
+  'credit_cards': 'Credit Cards',
   'subscriptions': 'Subscriptions',
   'goals': 'Goals',
   'add_goal': 'Add Goal',
@@ -72,6 +73,9 @@
             href="{{ url_for('add_income') }}"><i class="bi bi-cash-coin"></i> Income</a></li>
         <li><a class="nav-link {% if request.endpoint in ('add_expense','edit_expense') %}active-nav{% endif %}"
             href="{{ url_for('add_expense') }}"><i class="bi bi-wallet2"></i> Expenses</a></li>
+        <li class="nav-section-label">CREDIT CARDS</li>
+        <li><a class="nav-link {% if request.endpoint == 'credit_cards' %}active-nav{% endif %}"
+            href="{{ url_for('credit_cards') }}"><i class="bi bi-credit-card-2-front"></i> Credit Cards</a></li>
         <li><a class="nav-link {% if request.endpoint == 'subscriptions' %}active-nav{% endif %}"
             href="{{ url_for('subscriptions') }}"><i class="bi bi-arrow-repeat"></i> Subscriptions</a></li>
         <li><a
@@ -134,6 +138,10 @@
         <a class="mobile-nav-item{% if request.endpoint in ('add_expense', 'edit_expense') %} active-mobile-nav{% endif %}"
           href="{{ url_for('add_expense') }}" onclick="closeMobileMenu()">
           <i class="bi bi-wallet2"></i> Expenses
+        </a>
+        <a class="mobile-nav-item{% if request.endpoint == 'credit_cards' %} active-mobile-nav{% endif %}"
+          href="{{ url_for('credit_cards') }}" onclick="closeMobileMenu()">
+          <i class="bi bi-credit-card-2-front"></i> Credit Cards
         </a>
         <a class="mobile-nav-item{% if request.endpoint == 'subscriptions' %} active-mobile-nav{% endif %}"
           href="{{ url_for('subscriptions') }}" onclick="closeMobileMenu()">
@@ -305,7 +313,7 @@
       <span>Goals</span>
     </a>
     <button
-      class="bottom-nav-item {% if request.endpoint in ('analysis','subscriptions','email_import','settings','setup_mpin','change_mpin','request_account_info','tutorial') %}active-bottom-nav{% endif %}"
+       class="bottom-nav-item {% if request.endpoint in ('analysis','subscriptions','email_import','credit_cards','settings','setup_mpin','change_mpin','request_account_info','tutorial') %}active-bottom-nav{% endif %}"
       onclick="toggleMobileMenu()" aria-label="More menu">
       <i class="bi bi-grid-3x3-gap-fill"></i>
       <span>More</span>

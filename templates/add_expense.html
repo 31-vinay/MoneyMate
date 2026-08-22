@@ -142,8 +142,13 @@
           <a href="{{ url_for('add_expense') }}"
             class="btn btn-sm rounded-pill {% if not _fd and not only_uncategorized %}btn-primary{% else %}btn-outline-secondary{% endif %}"
             style="font-size:0.76rem;padding:2px 10px;">
-            All
-          </a>
+             All
+           </a>
+           {% for source_value, source_label in [('bank', 'Bank'), ('credit_card', 'Credit Card'), ('manual', 'Manual')] %}
+           <a href="{{ url_for('add_expense', source=source_value) }}"
+             class="btn btn-sm rounded-pill {% if source_filter == source_value %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+             style="font-size:0.76rem;padding:2px 10px;">{{ source_label }}</a>
+           {% endfor %}
           {% set _unc_total = expenses | selectattr('category', 'equalto', 'Uncategorized') | list | length if not only_uncategorized else expenses | length %}
           <a href="{{ url_for('add_expense', uncategorized=1) }}"
             class="btn btn-sm rounded-pill {% if only_uncategorized %}btn-warning{% else %}btn-outline-warning{% endif %}"

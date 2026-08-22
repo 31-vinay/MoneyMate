@@ -67,10 +67,19 @@ class Expense(db.Model):
     sub_start_date = db.Column(db.DateTime, nullable=True)
     sub_end_date = db.Column(db.DateTime, nullable=True)
     sub_expired_notified = db.Column(db.Boolean, default=False)
+    source_type = db.Column(db.String(30), default="MANUAL", nullable=False)
+    credit_card_id = db.Column(db.Integer, db.ForeignKey("credit_card.id"), nullable=True)
+    billing_cycle_id = db.Column(db.String(80), nullable=True)
+    statement_id = db.Column(db.Integer, db.ForeignKey("credit_card_statement.id"), nullable=True)
+    transaction_id = db.Column(db.String(120), nullable=True, unique=True)
+    merchant = db.Column(db.String(200), nullable=True)
+    need_want_type = db.Column(db.String(10), nullable=True)
+    is_settlement = db.Column(db.Boolean, default=False, nullable=False)
 
     __table_args__ = (
         db.Index("ix_expense_user_date", "user_id", "date"),
         db.Index("ix_expense_user_sub", "user_id", "is_subscription"),
+        db.Index("ix_expense_user_source", "user_id", "source_type"),
     )
 
 
@@ -110,3 +119,47 @@ class Goal(db.Model):
         return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
             days=30 * self.estimated_months
         )
+
+
+class CreditCard(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    issuer = db.Column(db.String(120), nullable=False)
+    last4 = db.Column(db.String(4), nullable=False)
+    credit_limit = db.Column(db.Float, nullable=False, default=0.0)
+    billing_cycle_start_day = db.Column(db.Integer, nullable=False, default=1)
+    statement_day = db.Column(db.Integer, nullable=False, default=5)
+    due_day = db.Column(db.Integer, nullable=False, default=25)
+    current_outstanding = db.Column(db.Float, nullable=False, default=0.0)
+    created_at = db.Column(db.DateTime, default=_now)
+    statements = db.relationship("CreditCardStatement", backref="credit_card", lazy="dynamic")
+    expenses = db.relationship("Expense", backref="credit_card", lazy="dynamic")
+
+    @property
+    def masked_name(self):
+        return f"{self.name} ••••{self.last4}"
+
+
+class CreditCardStatement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    credit_card_id = db.Column(db.Integer, db.ForeignKey("credit_card.id"), nullable=False, index=True)
+    billing_cycle_id = db.Column(db.String(80), nullable=False, unique=True)
+    cycle_start_date = db.Column(db.DateTime, nullable=False)
+    cycle_end_date = db.Column(db.DateTime, nullable=False)
+    statement_date = db.Column(db.DateTime, nullable=False, index=True)
+    statement_total = db.Column(db.Float, nullable=False)
+    calculated_total = db.Column(db.Float, nullable=False, default=0.0)
+    reconciliation_difference = db.Column(db.Float, nullable=False, default=0.0)
+    due_date = db.Column(db.DateTime, nullable=False)
+    amount_paid = db.Column(db.Float, nullable=False, default=0.0)
+    outstanding = db.Column(db.Float, nullable=False, default=0.0)
+    payment_date = db.Column(db.DateTime, nullable=True)
+    payment_source = db.Column(db.String(120), nullable=True)
+    payment_status = db.Column(db.String(20), nullable=False, default="UNVERIFIED")
+    created_at = db.Column(db.DateTime, default=_now)
+    transactions = db.relationship(
+        "Expense", backref="credit_card_statement", lazy="dynamic",
+        foreign_keys="Expense.statement_id",
+    )

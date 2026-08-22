@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
+  <div>
+    <h4 class="mb-1 fw-bold"><i class="bi bi-credit-card-2-front me-2" style="color:var(--brand-primary);"></i>Credit Cards</h4>
+    <p class="text-muted mb-0">Track card purchases by billing cycle without counting bill payments as expenses.</p>
+  </div>
+  <a href="#add-card" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i>Add Credit Card</a>
+</div>
+
+{% if not card_views %}
+<div class="card mb-4">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-credit-card-2-front" style="font-size:3rem;color:var(--brand-primary);opacity:.55;"></i>
+    <h5 class="mt-3">No credit cards added yet</h5>
+    <p class="text-muted">Add a card to import statements and track due dates.</p>
+  </div>
+</div>
+{% endif %}
+
+{% for item in card_views %}
+{% set card = item.card %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span><i class="bi bi-credit-card me-2"></i><strong>{{ card.masked_name }}</strong><small class="text-muted ms-2">{{ card.issuer }}</small></span>
+    <span class="badge bg-primary">{{ card.credit_limit|round(2) }} limit</span>
+  </div>
+  <div class="card-body">
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3"><div class="p-3 rounded-3 h-100" style="background:rgba(0,128,128,.07);"><small class="text-muted d-block">Credit Limit</small><strong>₹{{ "%.2f"|format(card.credit_limit) }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="p-3 rounded-3 h-100" style="background:rgba(9,132,227,.07);"><small class="text-muted d-block">Current Cycle Spend</small><strong>₹{{ "%.2f"|format(item.current_spend) }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="p-3 rounded-3 h-100" style="background:rgba(255,146,77,.09);"><small class="text-muted d-block">Current Card Balance</small><strong>₹{{ "%.2f"|format(card.current_outstanding) }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="p-3 rounded-3 h-100" style="background:rgba(0,184,148,.08);"><small class="text-muted d-block">Available Credit</small><strong>₹{{ "%.2f"|format(card.credit_limit - card.current_outstanding) }}</strong></div></div>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <h6 class="fw-bold">Import Credit Card Statement</h6>
+        <form method="post" action="{{ url_for('credit_card_statement_import', card_id=card.id) }}" enctype="multipart/form-data">
+          <div class="mb-2"><label class="form-label small">Statement Total (₹)</label><input class="form-control" type="number" name="statement_total" min="0" step="0.01" required></div>
+          <div class="row g-2">
+            <div class="col-6"><label class="form-label small">Statement Date</label><input class="form-control" type="date" name="statement_date" required></div>
+            <div class="col-6"><label class="form-label small">Due Date <span class="text-muted">(optional)</span></label><input class="form-control" type="date" name="due_date"></div>
+          </div>
+          <div class="mb-3 mt-2"><label class="form-label small">Statement File</label><input class="form-control" type="file" name="statement_file" accept=".csv,.xlsx,.xls,.pdf,.zip" required><small class="text-muted">CSV, Excel, PDF, or ZIP</small></div>
+          <button class="btn btn-primary btn-sm"><i class="bi bi-upload me-1"></i>Import Statement</button>
+        </form>
+      </div>
+      <div class="col-lg-7">
+        <h6 class="fw-bold">Statements &amp; Payment Status</h6>
+        {% for statement in item.statements %}
+        <div class="border rounded-3 p-3 mb-2">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div><strong>{{ statement.statement_date.strftime('%d %b %Y') }}</strong><div class="small text-muted">Cycle {{ statement.cycle_start_date.strftime('%d %b') }} – {{ statement.cycle_end_date.strftime('%d %b %Y') }} · Due {{ statement.due_date.strftime('%d %b %Y') }}</div></div>
+            <span class="badge {% if statement.payment_status == 'PAID' %}bg-success{% elif statement.payment_status == 'OVERDUE' %}bg-danger{% elif statement.payment_status == 'PARTIALLY_PAID' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ statement.payment_status }}</span>
+          </div>
+          <div class="row mt-2 small">
+            <div class="col-4">Statement<br><strong>₹{{ "%.2f"|format(statement.statement_total) }}</strong></div>
+            <div class="col-4">Paid<br><strong>₹{{ "%.2f"|format(statement.amount_paid) }}</strong></div>
+            <div class="col-4">Outstanding<br><strong>₹{{ "%.2f"|format(statement.outstanding) }}</strong></div>
+          </div>
+          {% if statement.reconciliation_difference|abs > 0.01 %}
+          <div class="alert alert-warning py-2 mt-2 mb-2 small">Statement reconciliation difference: ₹{{ "%.2f"|format(statement.reconciliation_difference) }}</div>
+          {% endif %}
+          {% if statement.outstanding > 0 %}
+          <form method="post" action="{{ url_for('credit_card_mark_paid', statement_id=statement.id) }}" class="row g-2 mt-2">
+            <div class="col-4"><input class="form-control form-control-sm" type="number" name="amount_paid" min="0.01" max="{{ statement.outstanding }}" step="0.01" placeholder="Payment ₹" required></div>
+            <div class="col-4"><input class="form-control form-control-sm" type="date" name="payment_date" value="{{ now.strftime('%Y-%m-%d') }}" required></div>
+            <div class="col-4"><button class="btn btn-outline-success btn-sm w-100">Mark Bill Paid</button></div>
+            <div class="col-12"><input class="form-control form-control-sm" name="payment_source" placeholder="Payment source (optional)"></div>
+          </form>
+          {% endif %}
+          <details class="mt-2"><summary class="small text-muted">View transaction breakdown</summary>
+            <div class="table-responsive mt-2"><table class="table table-sm small mb-0"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th class="text-end">Amount</th></tr></thead><tbody>
+            {% for exp in statement.transactions.all() %}
+            <tr><td>{{ exp.date.strftime('%d %b') }}</td><td>{{ exp.description }}</td><td>{{ exp.category }}</td><td>{{ exp.need_want_type }}</td><td class="text-end">₹{{ "%.2f"|format(exp.amount) }}</td></tr>
+            {% endfor %}
+            </tbody></table></div>
+          </details>
+        </div>
+        {% else %}<p class="text-muted small">No statements imported for this card.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<div class="card mb-4" id="add-card">
+  <div class="card-header"><i class="bi bi-plus-circle me-2"></i>Add Credit Card</div>
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      <div class="col-md-6"><label class="form-label">Card Name</label><input name="name" class="form-control" placeholder="HDFC Millennia" required></div>
+      <div class="col-md-6"><label class="form-label">Issuer / Bank</label><input name="issuer" class="form-control" placeholder="HDFC Bank" required></div>
+      <div class="col-md-3"><label class="form-label">Last 4 digits only</label><input name="last4" class="form-control" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required></div>
+      <div class="col-md-3"><label class="form-label">Credit Limit (₹)</label><input name="credit_limit" class="form-control" type="number" min="0" step="0.01" required></div>
+      <div class="col-md-2"><label class="form-label">Cycle starts day</label><input name="billing_cycle_start_day" class="form-control" type="number" min="1" max="31" value="1" required></div>
+      <div class="col-md-2"><label class="form-label">Statement day</label><input name="statement_day" class="form-control" type="number" min="1" max="31" value="5" required></div>
+      <div class="col-md-2"><label class="form-label">Due day</label><input name="due_day" class="form-control" type="number" min="1" max="31" value="25" required></div>
+      <div class="col-md-4"><label class="form-label">Current Outstanding (optional)</label><input name="current_outstanding" class="form-control" type="number" min="0" step="0.01" value="0"></div>
+      <div class="col-12"><small class="text-muted">Money Mate never asks for or stores your full card number, CVV, PIN, or OTP.</small></div>
+      <div class="col-12"><button class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Save Credit Card</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

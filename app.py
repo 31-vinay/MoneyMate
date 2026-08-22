@@ -33,7 +33,15 @@ from flask_admin.contrib.sqla import ModelView
 from sqlalchemy import func
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from models import db, User, Income, Expense, Goal
+from models import (
+    db,
+    User,
+    Income,
+    Expense,
+    Goal,
+    CreditCard,
+    CreditCardStatement,
+)
 from forms import (
     RegistrationForm,
     LoginForm,
@@ -65,6 +73,13 @@ from helpers import (
     normalize_goal_priorities,
 )
 from parsers import parse_bank_statement, scan_imap_emails, IMAP_PRESETS
+from credit_cards import (
+    classify_card_transaction,
+    cycle_dates,
+    possible_card_payment_matches,
+    refresh_statement_status,
+    statement_month_data,
+)
 
 # ── App Setup ─────────────────────────────────────────────────
 
@@ -148,6 +163,15 @@ with app.app_context():
         "ALTER TABLE user ADD COLUMN notifications_enabled BOOLEAN DEFAULT 1",
         "ALTER TABLE user ADD COLUMN savings_balance FLOAT DEFAULT 0.0",
         "ALTER TABLE user ADD COLUMN goals_wants_pct FLOAT DEFAULT 30.0",
+        "ALTER TABLE expense ADD COLUMN source_type VARCHAR(30) DEFAULT 'MANUAL'",
+        "ALTER TABLE expense ADD COLUMN credit_card_id INTEGER",
+        "ALTER TABLE expense ADD COLUMN billing_cycle_id VARCHAR(80)",
+        "ALTER TABLE expense ADD COLUMN statement_id INTEGER",
+        "ALTER TABLE expense ADD COLUMN transaction_id VARCHAR(120)",
+        "ALTER TABLE expense ADD COLUMN merchant VARCHAR(200)",
+        "ALTER TABLE expense ADD COLUMN need_want_type VARCHAR(10)",
+        "ALTER TABLE expense ADD COLUMN is_settlement BOOLEAN DEFAULT 0",
+        "ALTER TABLE credit_card_statement ADD COLUMN outstanding FLOAT DEFAULT 0.0 NOT NULL",
     ]
     for stmt in _migrations:
         try:
@@ -587,16 +611,29 @@ def dashboard():
     selected_month_label = datetime(view_year, view_month, 1).strftime("%B %Y")
 
     expenses = get_expenses_for_month(current_user.id, month_start, month_end)
-    total_spent = sum(e.amount for e in expenses)
-    essential_spent = sum(e.amount for e in expenses if e.is_essential)
-    non_essential_spent = total_spent - essential_spent
+    card_month = statement_month_data(current_user.id, month_start, month_end)
+    regular_expenses = [
+        e for e in expenses
+        if e.source_type != "CREDIT_CARD" and not e.is_settlement
+    ]
+    total_spent = sum(e.amount for e in regular_expenses) + card_month["total"]
+    essential_spent = (
+        sum(e.amount for e in regular_expenses if e.is_essential)
+        + card_month["needs"]
+    )
+    non_essential_spent = (
+        sum(e.amount for e in regular_expenses if not e.is_essential)
+        + card_month["wants"]
+    )
     needs_pct = (essential_spent / total_spent * 100) if total_spent else 0
     wants_pct = (non_essential_spent / total_spent * 100) if total_spent else 0
     wants_alert = wants_pct > 50
 
     categories = {}
-    for e in expenses:
+    for e in regular_expenses:
         categories[e.category] = categories.get(e.category, 0) + e.amount
+    for category, amount in card_month["categories"].items():
+        categories[category] = categories.get(category, 0) + amount
 
     incomes = Income.query.filter(
         Income.user_id == current_user.id,
@@ -846,6 +883,234 @@ def dashboard():
     )
 
 
+# ── Credit Cards ────────────────────────────────────────────────
+
+
+def _card_owned(card_id):
+    card = db.session.get(CreditCard, card_id)
+    return card if card and card.user_id == current_user.id else None
+
+
+@app.route("/credit-cards", methods=["GET", "POST"])
+@login_required
+def credit_cards():
+    if request.method == "POST":
+        last4 = request.form.get("last4", "").strip()
+        try:
+            credit_limit = float(request.form.get("credit_limit", 0))
+            start_day = max(1, min(31, int(request.form.get("billing_cycle_start_day", 1))))
+            statement_day = max(1, min(31, int(request.form.get("statement_day", 5))))
+            due_day = max(1, min(31, int(request.form.get("due_day", 25))))
+            outstanding = max(0.0, float(request.form.get("current_outstanding", 0) or 0))
+        except (TypeError, ValueError):
+            flash("Please enter valid numeric card details.", "danger")
+            return redirect(url_for("credit_cards"))
+        if (
+            not request.form.get("name", "").strip()
+            or not request.form.get("issuer", "").strip()
+            or len(last4) != 4
+            or not last4.isdigit()
+            or credit_limit < 0
+        ):
+            flash("Enter a card name, issuer, exactly four digits, and a valid limit.", "danger")
+            return redirect(url_for("credit_cards"))
+        card = CreditCard(
+            user_id=current_user.id,
+            name=request.form["name"].strip()[:120],
+            issuer=request.form["issuer"].strip()[:120],
+            last4=last4,
+            credit_limit=credit_limit,
+            billing_cycle_start_day=start_day,
+            statement_day=statement_day,
+            due_day=due_day,
+            current_outstanding=outstanding,
+        )
+        db.session.add(card)
+        db.session.commit()
+        flash("Credit card added successfully.", "success")
+        return redirect(url_for("credit_cards"))
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    cards = CreditCard.query.filter_by(user_id=current_user.id).order_by(CreditCard.created_at.desc()).all()
+    card_views = []
+    for card in cards:
+        statements = card.statements.order_by(CreditCardStatement.statement_date.desc()).all()
+        for statement in statements:
+            refresh_statement_status(statement, now)
+        current_start = datetime(now.year, now.month, 1)
+        current_spend = sum(
+            exp.amount
+            for exp in card.expenses.filter(
+                Expense.date >= current_start,
+                Expense.date < now + timedelta(days=1),
+                Expense.is_settlement == False,
+            ).all()
+        )
+        card_views.append({
+            "card": card,
+            "statements": statements,
+            "current_spend": round(current_spend, 2),
+            "last_statement": statements[0] if statements else None,
+        })
+        if statements:
+            db.session.commit()
+    return render_template("credit_cards.html", card_views=card_views, now=now)
+
+
+@app.route("/credit-cards/<int:card_id>/statement", methods=["POST"])
+@login_required
+def credit_card_statement_import(card_id):
+    card = _card_owned(card_id)
+    if not card:
+        flash("Credit card not found.", "danger")
+        return redirect(url_for("credit_cards"))
+    try:
+        statement_total = round(float(request.form.get("statement_total", 0)), 2)
+        statement_date = datetime.strptime(request.form["statement_date"], "%Y-%m-%d")
+        due_date_raw = request.form.get("due_date", "").strip()
+        due_date = datetime.strptime(due_date_raw, "%Y-%m-%d") if due_date_raw else None
+        if statement_total < 0:
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        flash("Enter a valid statement total and statement date.", "danger")
+        return redirect(url_for("credit_cards"))
+    start, end, calculated_due = cycle_dates(card, statement_date)
+    due_date = due_date or calculated_due
+    cycle_id = f"{card.id}:{start.strftime('%Y-%m-%d')}:{end.strftime('%Y-%m-%d')}"
+    if CreditCardStatement.query.filter_by(billing_cycle_id=cycle_id).first():
+        flash("That billing cycle has already been imported.", "warning")
+        return redirect(url_for("credit_cards"))
+    uploaded = request.files.get("statement_file")
+    if not uploaded or not uploaded.filename:
+        flash("Upload a CSV, Excel, PDF, or supported statement file.", "danger")
+        return redirect(url_for("credit_cards"))
+    try:
+        parsed = parse_bank_statement(uploaded.read(), uploaded.filename)
+    except Exception as exc:
+        flash(f"Could not parse the credit-card statement: {exc}", "danger")
+        return redirect(url_for("credit_cards"))
+    if not parsed:
+        flash("No transactions were detected in that statement.", "danger")
+        return redirect(url_for("credit_cards"))
+
+    statement = CreditCardStatement(
+        user_id=current_user.id,
+        credit_card_id=card.id,
+        billing_cycle_id=cycle_id,
+        cycle_start_date=start,
+        cycle_end_date=end,
+        statement_date=statement_date,
+        statement_total=statement_total,
+        due_date=due_date,
+        payment_status="UNPAID",
+    )
+    db.session.add(statement)
+    db.session.flush()
+    calculated_total = 0.0
+    imported = 0
+    seen = set()
+    for index, txn in enumerate(parsed):
+        if txn.get("type") != "expense":
+            continue
+        try:
+            txn_date = datetime.strptime(txn["date"], "%Y-%m-%d")
+            raw_amount = float(txn["amount"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        description = (txn.get("description") or "Card transaction").strip()[:200]
+        category, need_want, amount, is_refund = classify_card_transaction(
+            description, amount=raw_amount
+        )
+        fingerprint = (txn_date.date().isoformat(), description.lower(), round(amount, 2))
+        if fingerprint in seen:
+            continue
+        seen.add(fingerprint)
+        transaction_id = f"cc:{card.id}:{cycle_id}:{index}:{abs(hash(fingerprint))}"
+        db.session.add(
+            Expense(
+                user_id=current_user.id,
+                category=category,
+                amount=amount,
+                date=txn_date,
+                description=description,
+                merchant=description,
+                is_essential=need_want == "NEED",
+                need_want_type=need_want,
+                source_type="CREDIT_CARD",
+                credit_card_id=card.id,
+                billing_cycle_id=cycle_id,
+                statement_id=statement.id,
+                transaction_id=transaction_id,
+                is_subscription=False,
+            )
+        )
+        calculated_total += amount
+        imported += 1
+    statement.calculated_total = round(calculated_total, 2)
+    statement.reconciliation_difference = round(statement_total - calculated_total, 2)
+    statement.outstanding = statement_total
+    card.current_outstanding = round(card.current_outstanding + statement_total, 2)
+    db.session.commit()
+    if abs(statement.reconciliation_difference) > 0.01:
+        flash(
+            f"Statement imported with a reconciliation difference of ₹{statement.reconciliation_difference:,.2f}. "
+            "Review the statement breakdown.",
+            "warning",
+        )
+    else:
+        flash(f"Statement imported: {imported} transactions matched ₹{statement_total:,.2f}.", "success")
+    return redirect(url_for("credit_cards"))
+
+
+@app.route("/credit-cards/statement/<int:statement_id>/pay", methods=["POST"])
+@login_required
+def credit_card_mark_paid(statement_id):
+    statement = db.session.get(CreditCardStatement, statement_id)
+    if not statement or statement.user_id != current_user.id:
+        flash("Statement not found.", "danger")
+        return redirect(url_for("credit_cards"))
+    try:
+        amount = round(float(request.form.get("amount_paid", 0)), 2)
+        if amount <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        flash("Enter a valid payment amount.", "danger")
+        return redirect(url_for("credit_cards"))
+    statement.amount_paid = min(statement.statement_total, (statement.amount_paid or 0) + amount)
+    statement.payment_date = datetime.strptime(
+        request.form.get("payment_date") or datetime.utcnow().strftime("%Y-%m-%d"), "%Y-%m-%d"
+    )
+    statement.payment_source = request.form.get("payment_source", "Manual payment").strip()[:120]
+    refresh_statement_status(statement)
+    statement.credit_card.current_outstanding = max(
+        0.0, round(statement.credit_card.current_outstanding - amount, 2)
+    )
+    db.session.commit()
+    flash("Credit-card payment recorded.", "success")
+    return redirect(url_for("credit_cards"))
+
+
+@app.route("/credit-cards/statement/<int:statement_id>/transactions")
+@login_required
+def credit_card_statement_transactions(statement_id):
+    statement = db.session.get(CreditCardStatement, statement_id)
+    if not statement or statement.user_id != current_user.id:
+        return jsonify({"success": False, "message": "Statement not found."}), 404
+    return jsonify({
+        "success": True,
+        "transactions": [
+            {
+                "date": exp.date.strftime("%d %b %Y"),
+                "description": exp.description,
+                "category": exp.category,
+                "amount": exp.amount,
+                "need_want": exp.need_want_type,
+            }
+            for exp in statement.transactions.order_by(Expense.date.asc()).all()
+        ],
+    })
+
+
 # ── Income Routes ─────────────────────────────────────────────
 
 
@@ -1079,6 +1344,7 @@ def add_expense():
                 is_subscription=form.is_subscription.data,
                 sub_start_date=sub_start,
                 sub_end_date=sub_end,
+                source_type="MANUAL",
             )
         )
         db.session.commit()
@@ -1095,6 +1361,7 @@ def add_expense():
         exp_filter_days = None
 
     only_uncategorized = request.args.get("uncategorized") == "1"
+    source_filter = request.args.get("source", "all").lower()
 
     expense_query = Expense.query.filter_by(user_id=current_user.id)
     if exp_filter_days:
@@ -1111,6 +1378,15 @@ def add_expense():
     if only_uncategorized:
         expense_query = expense_query.filter(Expense.category == "Uncategorized")
         exp_filter_label = "Uncategorized"
+    if source_filter in ("bank", "credit_card", "manual"):
+        if source_filter == "credit_card":
+            expense_query = expense_query.filter(Expense.source_type == "CREDIT_CARD")
+        elif source_filter == "bank":
+            expense_query = expense_query.filter(Expense.source_type == "BANK")
+        else:
+            expense_query = expense_query.filter(
+                Expense.source_type.notin_(("BANK", "CREDIT_CARD"))
+            )
 
     expenses = expense_query.order_by(Expense.date.desc()).all()
     return render_template(
@@ -1121,6 +1397,7 @@ def add_expense():
         exp_filter_days=exp_filter_days,
         exp_filter_label=exp_filter_label,
         only_uncategorized=only_uncategorized,
+        source_filter=source_filter,
         expense_categories=expense_categories,
     )
 
@@ -1220,6 +1497,7 @@ def edit_expense(id):
         edit=True,
         expenses=expenses,
         only_uncategorized=False,
+        source_filter="all",
         expense_categories=expense_categories,
     )
 
@@ -1543,6 +1821,15 @@ def analysis():
         Expense.date >= date_from,
         Expense.date <= date_to,
     ).all()
+    regular_expenses_range = [
+        e for e in expenses_range
+        if e.source_type != "CREDIT_CARD" and not e.is_settlement
+    ]
+    card_statements = CreditCardStatement.query.filter(
+        CreditCardStatement.user_id == current_user.id,
+        CreditCardStatement.statement_date >= date_from,
+        CreditCardStatement.statement_date <= date_to,
+    ).all()
     total_income = sum(
         i.amount
         for i in Income.query.filter(
@@ -1551,15 +1838,28 @@ def analysis():
             Income.date_received <= date_to,
         ).all()
     )
-    total_spent = sum(e.amount for e in expenses_range)
-    essential = sum(e.amount for e in expenses_range if e.is_essential)
-    non_essential = total_spent - essential
+    total_spent = sum(e.amount for e in regular_expenses_range) + sum(
+        s.statement_total for s in card_statements
+    )
+    card_needs = sum(
+        e.amount for s in card_statements for e in s.transactions.all()
+        if e.need_want_type != "WANT"
+    )
+    card_wants = sum(
+        e.amount for s in card_statements for e in s.transactions.all()
+        if e.need_want_type == "WANT"
+    )
+    essential = sum(e.amount for e in regular_expenses_range if e.is_essential) + card_needs
+    non_essential = sum(e.amount for e in regular_expenses_range if not e.is_essential) + card_wants
     categories = {}
-    for e in expenses_range:
+    for e in regular_expenses_range:
         categories[e.category] = categories.get(e.category, 0) + e.amount
+    for statement in card_statements:
+        for e in statement.transactions.all():
+            categories[e.category] = categories.get(e.category, 0) + e.amount
     days_in_range = max((date_to - date_from).days + 1, 1)
     burn_rate = total_spent / days_in_range
-    has_data = bool(expenses_range) or total_income > 0
+    has_data = bool(expenses_range or card_statements) or total_income > 0
 
     return render_template(
         "analysis.html",
@@ -1745,6 +2045,7 @@ def email_import_do():
                         description=desc,
                         is_essential=False,
                         is_subscription=False,
+                        source_type="MANUAL",
                     )
                 )
             imported_count += 1
@@ -1927,6 +2228,7 @@ def bank_statement_import():
                         description=desc,
                         is_essential=essential,
                         is_subscription=sub,
+                        source_type="BANK",
                     )
                 )
             imported_count += 1

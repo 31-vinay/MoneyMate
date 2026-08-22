@@ -266,6 +266,7 @@ def chart_category_breakdown(categories, dark_mode=False):
 
 
 def get_analysis_data(user_id, Expense, Income):
+    from models import CreditCardStatement
     from datetime import datetime, timedelta, timezone
 
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -282,14 +283,32 @@ def get_analysis_data(user_id, Expense, Income):
         Income.user_id == user_id, Income.date_received >= six_months_ago
     ).all()
 
+    regular_month = [
+        e for e in expenses_month
+        if e.source_type != "CREDIT_CARD" and not e.is_settlement
+    ]
+    card_statements = CreditCardStatement.query.filter(
+        CreditCardStatement.user_id == user_id,
+        CreditCardStatement.statement_date >= month_start,
+    ).all()
     categories = {}
-    for e in expenses_month:
+    for e in regular_month:
         categories[e.category] = categories.get(e.category, 0) + e.amount
+    for statement in card_statements:
+        for e in statement.transactions.all():
+            categories[e.category] = categories.get(e.category, 0) + e.amount
 
     monthly_spending = defaultdict(float)
     for exp in all_expenses:
-        key = exp.date.strftime("%b %Y")
-        monthly_spending[key] += exp.amount
+        if exp.source_type != "CREDIT_CARD" and not exp.is_settlement:
+            key = exp.date.strftime("%b %Y")
+            monthly_spending[key] += exp.amount
+    for statement in CreditCardStatement.query.filter(
+        CreditCardStatement.user_id == user_id,
+        CreditCardStatement.statement_date >= six_months_ago,
+    ).all():
+        key = statement.statement_date.strftime("%b %Y")
+        monthly_spending[key] += statement.statement_total
     sorted_months = sorted(
         monthly_spending.keys(), key=lambda m: datetime.strptime(m, "%b %Y")
     )
@@ -300,7 +319,13 @@ def get_analysis_data(user_id, Expense, Income):
     for inc in all_incomes:
         monthly_income[inc.date_received.strftime("%b %Y")] += inc.amount
     for exp in all_expenses:
-        monthly_expense_all[exp.date.strftime("%b %Y")] += exp.amount
+        if exp.source_type != "CREDIT_CARD" and not exp.is_settlement:
+            monthly_expense_all[exp.date.strftime("%b %Y")] += exp.amount
+    for statement in CreditCardStatement.query.filter(
+        CreditCardStatement.user_id == user_id,
+        CreditCardStatement.statement_date >= six_months_ago,
+    ).all():
+        monthly_expense_all[statement.statement_date.strftime("%b %Y")] += statement.statement_total
 
     return (
         categories,
