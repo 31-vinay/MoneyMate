@@ -9,6 +9,7 @@ import calendar
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
+
 from flask import (
     Flask,
     render_template,
